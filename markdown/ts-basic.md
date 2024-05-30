@@ -31,7 +31,12 @@ const userForJhon: User = {
 
 3. object 定义时的 interface
 - 定义 interface 便于抽象封装、复用；interface 可互相调用
-```
+- interface 的继承
+  - interface 继承 interface
+  - interface 可以继承 type（此处的 type 需要定义为对象的形式）
+  - interface 可以继承类（Class）
+- interface 合并：同名 interface 会自动合并（注意属性类型需相同）
+```JavaScript
 // 对象数组（interface + type
 interface User {
   name: string,
@@ -45,6 +50,38 @@ const userList: User[] = [
     favorite: ['ball', 'ride'],
   }
 ]
+
+// readOnly 只读
+interface A {
+  readonly a: string,
+}
+
+// inter 多重继承
+interface Style {
+  color: string,
+}
+interface Shape {
+  name: string,
+}
+// Circle 实际上有三个属性；子类继承父类（包含多个）存在同名属性类型需相同
+interface Circle extends Style, Shape {
+  radius: number,
+}
+
+// interface 继承 type
+type TypeOne = {
+  name: string,
+  age: number
+}
+interface apiOne extends TypeOne {
+  sex: string
+}
+// 三个属性缺一不可
+const obj: apiOne = {
+  name: 'name',
+  age: 18,
+  sex: 'red',
+}
 ```
 
 4. 可选标记
@@ -445,12 +482,25 @@ const requiredUserPropsOnly: RequiredUserPropsOnly = 'name'; // 'name' | 'email'
 ```
 
 7. Parameters（入参） and ReturnType（返回值）
+```JavaScript
+function multiply(a: number, b: number): number {
+  return a * b
+}
+type MultiplyParameters = Parameters<typeof multiply> // [number, number]
+type MultiplyReturnType = ReturnType<typeof multiply> // number
+const anotherMultiply: (...args: MultiplyParameters) => MultiplyReturnType = (
+  x,
+  y
+) => {
+  return x * y
+}
+```
 
 8. typeof
 - 可用来获取函数的类型推导（入参 -> 返回值）
-```
-cosnt addHandler(a: number, b: number) => a + b
-typeof addHandler // (a: number, b: number) => number
+```JavaScript
+const addHandler = (a: number, b: number) => a + b
+typeof addHandler // function
 ```
 
 9. Awaited
@@ -557,7 +607,7 @@ console.log(sum([1, 2, 3], [4, 5])); // Error: Arrays must have the same length
 ```
 
 3. react 中定义组件时为其传入的属性定义类型
-```
+```JavaScript
 import * as React from 'react';
 
 interface HomeProps {

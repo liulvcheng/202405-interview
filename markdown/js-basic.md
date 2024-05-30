@@ -389,11 +389,11 @@ event.target、event.currentTarget、event.stopPropagation()（阻止向上传�
 ```
 
 20. sessionStorage and localStorage
-sessionStorage
+- sessionStorage
 - 生命周期：数据只在页面会话期间有效。页面会话在浏览器打开页面时开始，并在关闭页面或浏览器窗口时结束；数据在同一个页面会话中始终存在，页面刷新或重新加载不会影响数据的存储；关闭浏览器窗口或标签页后，sessionStorage 中的数据将被清除
 - 作用范围：数据在同一页面会话的同源窗口（或标签页）中共享；不同页面会话之间的数据不共享，即使它们来自同一个源
 
-localStorage
+- localStorage
 - 生命周期：数据具有持久性，即使浏览器关闭后，数据仍然存在；数据只有在明确删除时才会被清除（例如，通过 JavaScript 代码或用户手动清除浏览器存储）；数据在不同的浏览器窗口和标签页中都可用，只要它们属于同一个源（协议、主机和端口）
 - 作用范围：数据在同源的所有窗口和标签页中共享；不同源（协议、主机和端口）的数据不共享
 
@@ -471,17 +471,18 @@ console.log(arr.push(3)) // 3 - arr.length
 
 28. symbol
 - link：https://www.zhangxinxu.com/wordpress/2018/04/known-es6-symbol-function/
-```
+- Symbol 具有唯一性；Symbol 类型是不可枚举的；Symbol 访问需要用到 `Object.getOwnPropertySymbols()` 方法
+```JavaScript
 typeof Symbol() === "symbol"
 typeof Symbol("foo") === "symbol"
 typeof Symbol.iterator === "symbol"
 
-<!-- symbol 对比 -->
+// symbol 对比
 let symbolOne = Symbol('yo')
 let symbolTwo = Symbol('yo')
 symbolOne == or === symbolTwo // false
 
-<!-- 可作为唯一键标识 -->
+// 可作为唯一键标识
 let info1 = {
   name: '婷婷',
   age: 24,
@@ -493,6 +494,16 @@ let info2 = {
 }
 let target = {};
 Object.assign(target, info1, info2); // target 中会包含两个 symbol，对应的 description 不同
+
+// getOwnPropertySymbols()
+let obj = {
+  name: 'liu',
+  age: 99,
+  [Symbol('001')]: 'test001',
+  [Symbol('002')]: 'test002',
+  [Symbol('003')]: 'test003',
+}
+console.log(Object.getOwnPropertySymbols(obj)) // [ Symbol(001), Symbol(002), Symbol(003) ]
 ```
 
 29. import and required
@@ -500,7 +511,7 @@ Object.assign(target, info1, info2); // target 中会包含两个 symbol，对�
 - import：编译时加载（效率高、方便排查错误）；import 的内容只可读（本质是 import 引用；import 对象时改变对象的属性是可以的「不建议这样操作」）
 - export：可对外输出的东西（函数、类、变量：let、const、var）
 - required：运行时加载（可动态引入）；required 的内容可读可写（本质是 required 值的拷贝；多个同模块引用隔离）
-```
+```JavaScript
 <!-- export default -->
 // 第一组
 export default function crc32() { // 输出
@@ -533,7 +544,63 @@ console.log(B); // 3
 
 <!-- ES2020 中的 import() 函数实现运行时加载 -->
 link：https://es6.ruanyifeng.com/#:~:text=constants/index%27%3B-,import(),-%C2%A7%20%E2%87%A7
+
+可通过 async-await 来动态引入 import 中的内容
+// say.js
+export function hi() {
+  alert(`Hello`);
+}
+export function bye() {
+  alert(`Bye`);
+}
+
+let { hi, bye } = await import('./say.js');
+hi();
+bye();
 ```
+
+30. Boolean and new boolean
+- link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+```JavaScript
+// 创建基础类型（Boolean）值为 false
+let booleanOne = false
+// 创建 Boolean 的对象包装器，值为 [Boolean: true]；在 if or Boolean() 中会被判断为 true
+let booleanTwo = new Boolean(false)
+booleanOne === booleanTwo // false
+
+// 使用建议
+const x = Boolean(expression); // use this...
+const x = !!expression; // ...or this
+const x = new Boolean(expression); // don't use this!
+```
+
+31. ...args 剩余参数只能在最后，否则会抛出语法错误
+- link：https://github.com/lydiahallie/javascript-questions/blob/master/zh-CN/README-zh_CN.md#:~:text=94.-,%E8%BE%93%E5%87%BA%E4%BB%80%E4%B9%88,-%EF%BC%9F
+```JavaScript
+function getItems(fruitList, ...args, favoriteFruit) {
+  return [...fruitList, ...args, favoriteFruit]
+}
+getItems(["banana", "apple"], "pear", "orange") // SyntaxError
+
+function getItems(fruitList, favoriteFruit, ...args) {
+  return [...fruitList, ...args, favoriteFruit]
+}
+getItems(["banana", "apple"], "pear", "orange") // [ 'banana', 'apple', 'orange', 'pear' ]
+```
+
+32. Object 转换为字符串
+```JavaScript
+let obj = { name: 'liu' }
+console.log(obj + 'here') // [object Object]here（Object 都会被转换成 [object Object] or [Object object]
+```
+
+33. JSON.stringify and JSON.parse
+- JSON.stringify：JS 值转换为 JSON 字符串
+- JSON.parse：JSON 字符串转换为 JS 值
+
+34. eval
+- link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/eval
+- 'eval() 函数会将传入的字符串当做 JavaScript 代码进行执行'
 
 
 ### answer
@@ -628,4 +695,60 @@ const path = `C:\Documents\Projects\table.html`
 String.raw`${path}` // "C:DocumentsProjects able.html"
 
 String.raw`C:\Documents\Projects\table.html` // C:\Documents\Projects\table.html
+```
+
+7. 普通函数和箭头函数的 prototype
+- link：https://github.com/lydiahallie/javascript-questions/blob/master/zh-CN/README-zh_CN.md#:~:text=92.-,%E8%BE%93%E5%87%BA%E4%BB%80%E4%B9%88%EF%BC%9F,-function%20giveLydiaPizza(
+- '每一个函数（无论是函数声明还是函数表达式「这里函数表达式需要排除箭头函数」）在创建时都会自动拥有一个 prototype 属性，这个属性是一个对象。这个对象默认会有一个 constructor 属性指向函数自身'
+  - 函数声明和函数表达式（除开箭头函数）在创建时都会自动拥有一个 prototype 属性；Prototype 属性 是一个对象，这个对象默认会有一个 constructor 属性指向函数自身
+  - 箭头函数没有 prototype 属性；箭头函数不能用作构造函数，不能使用 new 操作符实例化
+``` JavaScript
+function funcOne() {}
+const funcTwo = () => {}
+const funcThree = function() {}
+
+console.log('1', funcOne.prototype) // {}
+console.log('2', funcTwo.prototype) // undefined
+console.log('3', funcThree.prototype) // {}
+```
+
+8. JS 处理解释语句
+- link：https://github.com/lydiahallie/javascript-questions/blob/master/zh-CN/README-zh_CN.md#:~:text=106.-,%E8%BE%93%E5%87%BA%E4%BB%80%E4%B9%88%EF%BC%9F,-const%20colorConfig%20%3D
+- 'JavaScript 解释（或取消装箱）语句。当我们使用方括号表示法时，它会看到第一个左方括号 `[` 并一直进行下去，直到找到右方括号 `]`。只有这样，它才会评估该语句。如果我们使用了 colorConfig[colors[1]]，它将返回 colorConfig 对象上 red 属性的值'
+```JavaScript
+const colorConfig = {
+  red: true,
+  blue: false,
+  green: true,
+  black: true,
+  yellow: false,
+}
+
+const colors = ["pink", "red", "blue"]
+
+console.log(colorConfig.colors[1]) // TypeError
+console.log(colorConfig[.colors[1]]) // true
+```
+
+9. Generator
+- link：https://github.com/lydiahallie/javascript-questions/blob/master/zh-CN/README-zh_CN.md#:~:text=112.-,%E8%BE%93%E5%87%BA%E4%BB%80%E4%B9%88%EF%BC%9F,-function*%20generatorOne
+```JavaScript
+function* generatorOne() {
+  yield ['a', 'b', 'c'];
+}
+
+function* generatorTwo() {
+  yield* ['a', 'b', 'c'];
+}
+
+const one = generatorOne()
+const two = generatorTwo()
+
+console.log(one.next().value) // ['a', 'b', 'c']
+console.log(one.next().value) // undefined
+
+console.log(two.next().value) // a
+console.log(two.next().value) // b
+console.log(two.next().value) // b
+console.log(two.next().value) // undefined
 ```
