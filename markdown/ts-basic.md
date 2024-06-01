@@ -690,3 +690,33 @@ type TName = {
 }
 // TName = { firstname: string, lastname: string }
 ```
+
+7. as const and Object.freeze
+- Object.freeze：返回值为对象自身（即返回值也被冻结）
+- Object.isFrozen()；返回 true、false
+```JavaScript
+// as const 可将属性设置为 readonly
+const objOne = {
+  name: 'john',
+  age: 18,
+  sex: 'male'
+} as const
+objOne.name = 'liu'
+
+// Object.freeze 可将对象冻结（浅层冻结）
+const objTwo = Object.freeze({
+  name: 'john',
+  age: 18,
+  sex: 'male',
+  info: {
+    paramsOne: 1,
+    paramsTwo: 2
+  }
+})
+objTwo.name = 'liu' // error
+objTwo.info.paramsOne = 11
+
+// Array 是特殊的 Object
+const arrOne = Object.freeze([1, 2, 3, { key: 4 }])
+arrOne[0] = 11 // error
+```
