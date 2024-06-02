@@ -1,7 +1,26 @@
 ### this 指向
 1. this 的值取决于函数调用时的上下文
 - 全局上下文：browser 环境下为 window；node 环境下为 global
-- 函数上下文：普通函数内部且非严格模式下为 window；作为对象内的函数使用时为该对象；箭头函数从创建时的父作用域继承 this
+- 函数上下文：普通函数内部且非严格模式下为 window；作为对象内的函数使用时为该对象；箭头函数从创建时的父作用域继承 this（从当前的上下文环境开始往父级找 this）
+```JavaScript
+const user = {
+  email: 'my@email.com',
+  updateEmailOne: (email) => {
+    this.email = email
+  },
+  updateEmailTwo: function (email) {
+    this.email = email
+  },
+}
+
+// updateEmailOne 箭头函数中的 this 不指向 user
+user.updateEmailOne('new01@email.com')
+console.log('1', user.email) // my@email.com
+
+// updateEmailTwo 函数声明中的 this 指向调用它的东西（这里指 user）
+user.updateEmailTwo('new02@email.com')
+console.log('2', user.email) // new02@email.com
+```
 
 2. event.currentTarget and event.target
 - link：https://leetcode.cn/problems/array-prototype-last/solutions/2506895/shu-zu-yuan-xing-dui-xiang-de-zui-hou-yi-4phe/#:~:text=event.currentTarget%EF%BC%9A%E8%AF%A5,%E5%88%B0%E7%9A%84%E5%85%83%E7%B4%A0%E3%80%82
@@ -602,6 +621,39 @@ console.log(obj + 'here') // [object Object]here（Object 都会被转换成 [ob
 - link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/eval
 - 'eval() 函数会将传入的字符串当做 JavaScript 代码进行执行'
 
+35. isNaN and Number.isNaN
+- link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Number/isNaN
+- isNaN 会将传参不是 Number 类型的转换为 Number 类型（存在迷惑行为）；Number.isNaN 不会转换类型，如果传入非 Number 类型会直接返回 false，传入 NaN 会返回 true
+```JavaScript
+const name = 'Lydia Hallie'
+const age = 21
+
+console.log(Number.isNaN(name)) // false
+console.log(Number.isNaN(age)) // false
+
+console.log(isNaN(name)) // true（isNaN 接收 Number 类型的参数
+console.log(isNaN(age)) // false
+```
+
+36. super
+- link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/super
+```JavaScript
+class Bird {
+  constructor() {
+    console.log("111")
+  }
+}
+
+class Flamingo extends Bird {
+  constructor() {
+    console.log("222")
+    // 这里 super() 相当于调用父类 Bird 中的构造函数；super() 只能被调用一次
+    super() // 111
+  }
+}
+
+const pet = new Flamingo()
+```
 
 ### answer
 1. null vs undefined

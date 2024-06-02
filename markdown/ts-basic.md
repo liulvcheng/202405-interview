@@ -720,3 +720,7 @@ objTwo.info.paramsOne = 11
 const arrOne = Object.freeze([1, 2, 3, { key: 4 }])
 arrOne[0] = 11 // error
 ```
+
+8. Object.seal()
+- link（可以简单理解为密封一个对象）：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/seal
+- Object.isSealed()
