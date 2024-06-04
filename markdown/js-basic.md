@@ -649,10 +649,97 @@ class Flamingo extends Bird {
     console.log("222")
     // 这里 super() 相当于调用父类 Bird 中的构造函数；super() 只能被调用一次
     super() // 111
+    super() // Error
   }
 }
 
 const pet = new Flamingo()
+```
+
+37. Object.fromEntries()
+- link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries
+- 和 Object.entries() 互为逆操作
+```JavaScript
+console.log(
+  Object.fromEntries([
+    [1, 2], // key：1，value：2
+    [2, 3],
+  ])
+) // { '1': 2, '2': 3 }
+
+console.log(
+  Object.fromEntries([
+    [
+      [1, 2], // key
+      [1, 2], // value
+    ],
+    [[2, 3]], // key，不存在 value 即 undefiend
+  ])
+) // { '1,2': [ 1, 2 ], '2,3': undefined }
+
+// Map to Obj
+const map = new Map([
+  ['foo', 'bar'],
+  ['baz', 42],
+])
+const obj = Object.fromEntries(map)
+console.log(obj) // { foo: "bar", baz: 42 }
+
+// Array to Obj
+const arr = [
+  ['0', 'a'],
+  ['1', 'b'],
+  ['2', 'c'],
+]
+const obj = Object.fromEntries(arr)
+console.log(obj) // { 0: "a", 1: "b", 2: "c" }
+
+// 对象 value 操作
+const object1 = { a: 1, b: 2, c: 3 }
+const object2 = Object.fromEntries(
+  Object.entries(object1).map(([key, val]) => [key, val * 2])
+)
+console.log(object2) // { a: 2, b: 4, c: 6 }
+```
+
+38. flat and flatMap
+- link（flat）：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
+- link（flatMap）：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/flatMap
+```JavaScript
+// Infinity 用于将数组层次全部展开
+array.flat(Infinity)
+
+// 三种方式用于去除负数且将剩余值 * 2
+// 001
+const a = [5, 4, -3, 20, 17, -33, -4, 18]
+const resultOne = a.filter((item) => item > 0).map((item) => item * 2)
+console.log(resultOne) // [ 10, 8, 40, 34, 36 ]
+
+// 002
+const resultTwo = a.reduce((pre, cur) => {
+  if (cur > 0) {
+    return [...pre, cur * 2]
+  }
+  return pre
+}, [])
+console.log(resultTwo) // [ 10, 8, 40, 34, 36 ]
+
+// 003
+const resultThree = a.flatMap((item) => item > 0 ? [item * 2] : [])
+console.log(resultThree) // [ 10, 8, 40, 34, 36 ]
+
+// 去除负数并将剩余值为奇数的全部转换为偶数
+// 假设我们想要删除所有负数，并将奇数拆分成偶数和 1
+const a = [5, 4, -3, 20, 17, -33, -4, 18]
+//         |\  \  x   |  | \   x   x   |
+//        [4,1, 4,   20, 16, 1,       18]
+const result = a.flatMap((n) => {
+  if (n < 0) {
+    return []
+  }
+  return n % 2 === 0 ? [n] : [n - 1, 1]
+})
+console.log(result) // [4, 1, 4, 20, 16, 1, 18]
 ```
 
 ### answer

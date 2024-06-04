@@ -255,3 +255,7 @@ display: none; // 从 DOM tree 中移除
   background-color: red;
 }
 ```
+
+6. gap
+- link（row-gap）：https://developer.mozilla.org/zh-CN/docs/Web/CSS/row-gap
+- gap 属性包括 row-gap 和 column-gap
