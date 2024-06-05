@@ -214,6 +214,7 @@ const fullName = computed({
 2. 保证单向数据流（便于对数据进行跟踪，避免数据混乱）；保证单向数据流的操作一致性（一个父组件可能同时包含多个子组件，当每个子组件都可以改变 props 的值从而影响父组件的话会造成不可预料的错误和数据流混乱等问题）
 3. 子组件需要用到更改的 props 时：可在子组件中拷贝一份局部数据属性（data）；可通过 comuted 对 props 进行处理
 4. props 可配置属性：required、default、Type（String、Number 等）、validator
+5. 可以修改的：如传入 `{ name: 'liu', age; 99 }` 时，对象上 name 和 age 的值都可以修改（本质为 props 为对象时传递的是引用
 
 ### Vue2 and Vue3 实现响应式的区别
 1. link：https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/90
@@ -255,3 +256,8 @@ const fullName = computed({
 - onActivated()
 - onDeactivated()
 - onServerPrefetch()
+
+### 为什么 Vuex 的 mutation 和 Redux 的 reducer 中不能做异步操作？
+1. link：https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/65
+2. Vuex 的设计理念就是 mutation 中处理同步操作，action 中处理异步操作（最后还是通过 mutation 来操作 state）
+3. 异步操作存在完成时间不确定的情况，当多个异步操作同时进行时 state 的状态会变得难以控制（所以异步操作最后该改变 state 的状态还是通过触发 mutation 来完成）

@@ -121,6 +121,42 @@ var once = function(fn) {
  */
 ```
 
+### Fetch
+- link：https://www.ruanyifeng.com/blog/2020/12/fetch-tutorial.html
+- AbortController：https://developer.mozilla.org/zh-CN/docs/Web/API/AbortController
+  - abort() 函数用于取消 fetch；.signal 创建一个属性使其关联 fetch 请求
+- Fetch and Axios：https://blog.logrocket.com/axios-vs-fetch-best-http-requests/
+```JavaScript
+let controller
+const url = 'video.mp4'
+
+const downloadBtn = document.querySelector('.download')
+const abortBtn = document.querySelector('.abort')
+
+downloadBtn.addEventListener('click', fetchVideo)
+
+abortBtn.addEventListener('click', () => {
+  if (controller) {
+    //  取消
+    controller.abort()
+    console.log('中止下载')
+  }
+})
+
+function fetchVideo() {
+  controller = new AbortController()
+  const signal = controller.signal
+  // 将 signal 作为参数
+  fetch(url, { signal })
+    .then((response) => {
+      console.log('下载完成', response)
+    })
+    .catch((err) => {
+      console.error(`下载错误：${err.message}`)
+    })
+}
+
+```
 
 ### Error
 1. error 集合
@@ -170,9 +206,9 @@ console.log('here', Array.prototype.sort.call(obj)) // { 1: '1', 2: '2', 3: '3' 
 - Map 类似于 Object（键值对的形式；支持链式调用
 - 注意 Map 对某些类型键（Array、Object）的取值：https://es6.ruanyifeng.com/#:~:text=)%0A//%20undefined-,%E6%B3%A8%E6%84%8F,-%EF%BC%8C%E5%8F%AA%E6%9C%89%E5%AF%B9%E5%90%8C
 - Map 与其它数据结构的转换：https://es6.ruanyifeng.com/#:~:text=%EF%BC%881%EF%BC%89-,Map%20%E8%BD%AC%E4%B8%BA%E6%95%B0%E7%BB%84,-%E5%89%8D%E9%9D%A2%E5%B7%B2%E7%BB%8F%E6%8F%90%E8%BF%87
-- Set 类似于 Array（值的形式；set.keys() 和 set.valus() 效果是一样的；每个值唯一无重复（可用于快速去重）；支持链式调用；克通过 forEach、for...of 等便利
+- Set 类似于 Array（值的形式；set.keys() 和 set.valus() 效果是一样的；每个值唯一无重复（可用于快速去重）；支持链式调用；克通过 forEach、for...of 等遍历
 - map.set()、map.has()；set.add()、set.has()
-```
+```JavaScript
 let map = new Map
 map.set(1, 1).set(2, 2)...
 map.keys()、map.values()、map.entries() 返回值都是可迭代对象（可使用 for...of 来遍历
@@ -182,7 +218,7 @@ set.add(1).add(2).add(3)
 ```
 
 - object to map
-```
+```JavaScript
 let obj = {
   name: 'john',
   age: 99
@@ -190,14 +226,19 @@ let obj = {
 let map = new Map(Object.entries(obj))
 ```
 - map to object
-```
+```JavaScript
 let map = new Map()
 map.set('name', 'john').set('age', 99)
-let obj = Object.formEntries(map)
+let objOne = Object.formEntries(map)
+
+let objTwo = {}
+for (let [key, value] of map) {
+  objTwo[key] = value
+}
 ```
 
 - set 并集、交集、差集
-```
+```JavaScript
 let a = new Set([1, 2, 3]);
 let b = new Set([4, 3, 2]);
 
@@ -215,8 +256,17 @@ let difference = new Set([...a].filter(x => !b.has(x)));
 ```
 
 7. WeakMap and WeakSet
-- link：https://zh.javascript.info/weakmap-weakset
-- 与垃圾回收机制有关
+- link（1）：https://zh.javascript.info/weakmap-weakset
+- link（2）：https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/6
+- 能做键的数据类型不一样；与垃圾回收机制有关；两者都不能遍历
+- WeakSet
+  - 成员都是对象
+  - 成员都是弱引用；可以被垃圾回收机制回收；可以用来保存 DOM 节点，不容易造成内存泄漏
+  - 不能遍历，方法有 add、delete、has
+- WeakMap
+  - 只接受对象作为键名（null 除外），不接受其他类型的值作为键名
+  - 键名是弱引用，键值可以是任意的，键名所指向的对象可以被垃圾回收，此时键名是无效的
+  - 不能遍历，方法有 get、set、has、delete
 
 8. 同步任务、微任务、宏任务
 - 同步任务：立即执行，按顺序执行（console、赋值等
