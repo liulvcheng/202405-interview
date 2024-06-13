@@ -314,14 +314,12 @@ console.log("同步任务 4");
 9. event loop 相关
 - link：http://www.ruanyifeng.com/blog/2014/10/event-loop.html
 - video：https://www.youtube.com/watch?v=eiC58R16hb8
-```
 - js 单进程
 - 任务（同步、异步）需要排队
   - 同步任务到 call stack（先进后出
   - 异步任务到 task queue or microTask queue（先进先出
     - 异步任务分为微任务（microTask）、宏任务（task）
   - 同步任务执行完后 event loop 将 task queue or microTask queue 中的任务添加到 call stack 中执行
-```
 
 10. 变量提升
 - 'var 声明的变量会被提升到作用域的顶部，并初始化为 undefined，因此在变量声明之前可以访问，但值为 undefined'
@@ -790,6 +788,79 @@ const result = a.flatMap((n) => {
   return n % 2 === 0 ? [n] : [n - 1, 1]
 })
 console.log(result) // [4, 1, 4, 20, 16, 1, 18]
+```
+
+39. Proxy
+- link（mdn）：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+- link（阮一峰）：https://es6.ruanyifeng.com/#docs/proxy
+```JavaScript
+// 代理转发一直会发生
+// 代理转发：在 Proxy 中，如果我们不定义任何拦截器，所有对代理对象的操作（例如属性读取、属性设置、函数调用等）都会自动转发到目标对象，Proxy 影响到 target
+let target = { name: 'Alice', age: 30 };
+
+// 没有拦截器，默认行为
+let proxy1 = new Proxy(target, {});
+
+proxy1.name = 'Bob';
+console.log(target.name);  // 输出: 'Bob'
+console.log(proxy1.name);  // 输出: 'Bob'
+
+// 有拦截器，自定义行为
+let handler = {
+  get: function(target, prop, receiver) {
+    if (prop === 'name') {
+      return 'Intercepted: ' + target[prop];
+    }
+    return target[prop];
+  },
+  set: function(target, prop, value) {
+    if (prop === 'age') {
+      if (value < 0) {
+        throw new Error('Age cannot be negative');
+      }
+    }
+    target[prop] = value;
+    return true;
+  }
+};
+
+let proxy2 = new Proxy(target, handler);
+
+proxy2.name = 'Charlie';
+console.log(target.name);  // 输出: 'Charlie'（代理转发发生了，即操作 proxy2.name 影响到了 target
+console.log(proxy2.name);  // 输出: 'Intercepted: Charlie'
+
+proxy2.age = 25;
+console.log(target.age);   // 输出: 25
+
+try {
+  proxy2.age = -5;
+} catch (e) {
+  console.log(e.message);  // 输出: 'Age cannot be negative'
+}
+
+// 通过 Proxy 实现负索引访问 Array 元素（通过 Proxy 劫持数组原有操作
+function createArray(...elements) {
+  let handler = {
+    get(target, propKey, receiver) {
+      let index = Number(propKey)
+      if (index < 0) {
+        propKey = String(target.length + index)
+      }
+      // 直接访问属性
+      return target[propKey]
+      // 通过 Reflect 访问
+      // return Reflect.get(target, propKey, receiver)
+    },
+  }
+
+  let target = []
+  target.push(...elements)
+  return new Proxy(target, handler)
+}
+
+let arr = createArray('a', 'b', 'c')
+console.log(arr[-1]) // c
 ```
 
 ### answer

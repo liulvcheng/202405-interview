@@ -1,3 +1,6 @@
+### css 设计原则
+1. styles 代码组织结构 & 全局样式配置：https://zuozizhen.com/blog/css-standard/
+
 ### document
 1. getElementById()
 - id 唯一；id 区分大小写；找不到返回 null，找到返回 DOM 节点（Element 对象
@@ -259,3 +262,47 @@ display: none; // 从 DOM tree 中移除
 6. gap
 - link（row-gap）：https://developer.mozilla.org/zh-CN/docs/Web/CSS/row-gap
 - gap 属性包括 row-gap 和 column-gap
+
+7. width: 100%; 和 width: auto;
+- link：https://juejin.cn/post/7312510748310863887?searchId=2024061220255810BDD977B77167882398
+- 建议用 auto，设置 100% 需要考虑到父元素的 border、padding、margin 以及子元素的相关属性；auto 则会自动适应 content 宽度（100% 是子元素的 content 撑满父元素的 content，auto 是子元素的 border、padding 等属性加起来撑满父元素的 content）
+- 另外一种解决方法是设置 box-sizing 为 border-box（将盒子的 border、padding、content 合并为 content，需注意 margin 不包括
+```CSS
+/* 全局设置盒子渲染规则 */
+* {
+  box-sizing: border-box;
+}
+
+or
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* , 选择器（选择用 , 分割所有的元素 */
+h1, h2, h3 {
+  color: blue;
+}
+
+/* 类 & 标签 */
+.button, button {
+  background-color: green;
+  color: white;
+}
+
+.card, .card::before, .card::after {
+  box-sizing: border-box;
+}
+
+/* id & 类 */
+#header, .footer {
+  padding: 10px;
+  background-color: grey;
+}
+
+input[type="text"], input[type="password"] {
+  border: 1px solid black;
+}
+```

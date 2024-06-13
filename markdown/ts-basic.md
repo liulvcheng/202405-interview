@@ -36,7 +36,7 @@ const userForJhon: User = {
   - interface 可以继承 type（此处的 type 需要定义为对象的形式）
   - interface 可以继承类（Class）
 - interface 合并：同名 interface 会自动合并（注意属性类型需相同）
-```JavaScript
+```TypeScript
 // 对象数组（interface + type
 interface User {
   name: string,
@@ -169,7 +169,8 @@ testFunOne(1, 1)
 
 2. 类型别名
 - 类型别名可充当变量或者函数
-```
+- 类型别名具有块作用域
+```TypeScript
 // 类型别名充当变量
 type Multiple = string | number | boolean
 type Status = 'success' | 'failes'
@@ -200,6 +201,14 @@ num = true
 // 交叉类型
 type sameType = string & number & boolean // 以上三种类型需同时满足才合法（实际上并不存在这种类型
 
+// 联合类型块作用域（两个 Color 类型不相同
+type Color = 'red'
+
+if (Math.random() < 0.5) {
+  type Color = 'blue'
+}
+```
+
 3. 字面量类型 or 字面量联合、交叉类型（通过类型别名更严格的定义类型
 ```
 type Status = 'success' | 'failed' // 只能是 'success' or 'failed'（比 string 类型更具体
@@ -208,6 +217,7 @@ const fetchStatus: Status = 'success' or 'failed'
 ```
 
 4. 联合 or 交叉类型与 interface 的结合
+```
 interface apiOne {}
 interface apiTwo {}
 interface apiThree {}
@@ -305,12 +315,12 @@ console.log('1', myFuncOne(1, 2)) // 3
 console.log('2', myFuncOne('1', '2')) // 12
 ```
 
-
 ### unknown type（可通过类型断言得到实际业务逻辑中需要的类型 or 兼容历史 interface 定义
 - unknown 类型 = 万能类型 + 类型检查
+- 可以视为严格版的 any
 
 1. unknown 类型断言到具体类型（number、string）；具体类型断言到 unknown 类型（兼容历史 interface 定义）
-```
+```TypeScript
 // 下述俩函数没有区别
 function myFuncOne(params: unknown) {
   // 断言为 number array
@@ -326,6 +336,69 @@ function myFuncOne(params: unknown) {
     item = (item as number) + 1
   })
 }
+
+// unknown 的类型缩小
+let a: unknown = 1
+// unknown 缩小为 number
+if (typeof a === 'number') {
+  let r = a + 10 // 正确
+}
+
+let s: unknown = 'hello'
+// unknown 缩小为 string
+if (typeof s === 'string') {
+  s.length // 正确
+}
+```
+
+### never 类型
+1. 可以理解为空类型（类似于空集合是所有集合的子集）
+```TypeScript
+function fn(x: string | number) {
+  if (typeof x === 'string') {
+    // ...
+  } else if (typeof x === 'number') {
+    // ...
+  } else {
+    x // never 类型
+  }
+}
+```
+
+### bigint 类型
+```TypeScript
+// bigint 定义需在其后加 n
+const x: bigint = 123n
+const y: bigint = 0xffffn
+```
+
+### 类型缩小
+1. '“类型缩小”是 TypeScript 处理联合类型的标准方法，凡是遇到可能为多种类型的场合，都需要先缩小类型，再进行处理。实际上，联合类型本身可以看成是一种“类型放大”（type widening），处理时就需要“类型缩小”（type narrowing）'
+```TypeScript
+function getPort(
+  scheme: 'http' | 'https'
+) {
+  switch (scheme) {
+    case 'http':
+      return 80;
+    case 'https':
+      return 443;
+  }
+}j
+```
+
+### typeof
+1. 获取值的类型（在 ts 中会存在两种 typeof，一种是类型运算，一种是值运算
+```TypeScript
+let a = 1
+// 值运算
+let b: typeof a // number
+
+// 类型运算：typeof 来判断 a 的类型
+if (typeof a === 'number') {
+  b = a
+}
+
 ```
 
 
@@ -482,7 +555,7 @@ const requiredUserPropsOnly: RequiredUserPropsOnly = 'name'; // 'name' | 'email'
 ```
 
 7. Parameters（入参） and ReturnType（返回值）
-```JavaScript
+```TypeScript
 function multiply(a: number, b: number): number {
   return a * b
 }
@@ -498,7 +571,7 @@ const anotherMultiply: (...args: MultiplyParameters) => MultiplyReturnType = (
 
 8. typeof
 - 可用来获取函数的类型推导（入参 -> 返回值）
-```JavaScript
+```TypeScript
 const addHandler = (a: number, b: number) => a + b
 typeof addHandler // function
 ```
@@ -554,6 +627,781 @@ type ItemType = 'official' | 'second-hand';
 type SKU = `${Brand}-${Memory}-${ItemType}`;
 ```
 
+### 阮一峰 ts 入门：数组
+1. 数组类型的声明
+```TypeScript
+let arrOne: (number | string)[] = [1, '1']
+let arrTwo: Array<number | string> = [1, '1']
+```
+
+2. 声明只读数组
+```TypeScript
+const arrOne: ReadonlyArray<number> = [1, 2]
+const arrTwo: Readonly<number[]> = [1, 2]
+// const 断言
+const arrThree = [0, 1] as const
+```
+
+3. 多维数组
+```TypeScript
+var multi: number[][] = [
+  [1, 2, 3],
+  [23, 24, 25],
+]
+
+// 多个类型（更多维度类似添加即可
+// 声明一个可以包含 string 或 number 类型的二维数组
+let multiArray: Array<string | number | Array<string | number>> = [
+  'hello',
+  42,
+  ['world', 100],
+]
+
+// 访问元素
+console.log(multiArray[0]) // 输出: hello
+console.log(multiArray[1]) // 输出: 42
+console.log(multiArray[2]) // 输出: [ 'world', 100 ]
+
+// 访问子数组中的元素
+if (Array.isArray(multiArray[2])) {
+  console.log(multiArray[2][0]) // 输出: world
+  console.log(multiArray[2][1]) // 输出: 100
+}
+
+// 向数组添加新的元素
+multiArray.push(['new', 200])
+
+console.log(multiArray) // 输出: [ 'hello', 42, [ 'world', 100 ], [ 'new', 200 ] ]
+```
+
+4. Readonly number[] 和 numebr[]
+- 'TypeScript 将readonly number[]与number[]视为两种不一样的类型，后者是前者的子类型；这是因为只读数组没有pop()、push()之类会改变原数组的方法，所以number[]的方法数量要多于readonly number[]，这意味着number[]其实是readonly number[]的子类型；我们知道，子类型继承了父类型的所有特征，并加上了自己的特征，所以子类型number[]可以用于所有使用父类型的场合，反过来就不行'
+- 子类型继承父类型并扩展父类型没有的功能
+
+### 阮一峰 ts 入门：元组
+1. 如何区分数组和元组？
+- 看类型（number、string 等）写在中括号内还是外
+```TypeScript
+let arr1: number[] = [1]
+let arr2: [number] = [1]
+
+// 元组可选（可选符号只能在尾部的元素
+let a: [number, number?] = [1]
+
+type myTuple1 = [number?, number, number?, string?] // 非法，? 在头部
+type myTuple2 = [number?, number, number?, string?] // 合法
+```
+
+### 阮一峰 ts 入门：symbol
+1. unique symbol 是 symbol 的子集；unique symbol 强制指定类型的值，symbol 不强制
+```TypeScript
+const sym1: symbol = Symbol()
+const sym2: symbol = Symbol()
+// 值的类型不强制
+interface MyInterface {
+  [sym1]: string
+  [sym2]: number
+}
+// 下述两者定义都可以
+let myObj: MyInterface = {
+  [sym1]: 'value1',
+  [sym2]: 42,
+  
+  [sym1]: 42,
+  [sym2]: 'value1',
+}
+console.log(myObj[sym1]) // 输出 "value1"
+console.log(myObj[sym2]) // 输出 42
+
+const sym1: unique symbol = Symbol()
+const sym2: unique symbol = Symbol()
+// 强制指定值的类型
+interface MyInterface {
+  [sym1]: string
+  [sym2]: number
+}
+let myObj: MyInterface = {
+  [sym1]: 'value1',
+  [sym2]: 42,
+
+  // 下述这种定义会报错
+  // [sym1]: 42,
+  // [sym2]: 'value1',
+}
+console.log(myObj[sym1]) // 输出 "value1"
+console.log(myObj[sym2]) // 输出 42
+```
+
+### 阮一峰 ts 入门：函数
+1. 变量要套用另一个函数类型（typeof
+```TypeScript
+function add(x: number, y: number) {
+  return x + y
+}
+const myAdd: typeof add = function (x, y) {
+  return x + y
+}
+myAdd(1, 2)
+myAdd('1', 2) // 参数类型错误
+```
+
+2. 箭头函数 map
+```TypeScript
+type Person = { name: string }
+
+const people = ['alice', 'bob', 'jan'].map((name): Person => ({ name }))
+const people = ['alice', 'bob', 'jan'].map((name: string): Person => ({ name }))
+console.log(people) // [ { name: 'alice' }, { name: 'bob' }, { name: 'jan' } ]
+```
+
+3. 可选参数
+```TypeScript
+// 可选参数需在尾部
+let myFunc: (a?: number, b: number) => number // 报错
+
+// 可选参数在头部的处理
+let myFunc: (a: number | undefined, b?: number) => number
+
+// 用到可选参数时需判断 undefined
+let myFunc: (a: number, b?: number) => number
+myFunc = function (x, y) {
+  if (y === undefined) {
+    return x
+  }
+  return x + y
+}
+```
+
+4. 参数解构
+```TypeScript
+// 对象
+function sumOne({ a, b, c }: { a: number; b: number; c: number }) {
+  console.log(a + b + c)
+}
+
+// 数组
+function sumTwo([a, b]: [number, number]) {
+  console.log(a + b)
+}
+
+// 利用类型别名
+type ABC = { a: number; b: number; c: number }
+function sumThree({ a, b, c }: ABC) {
+  console.log(a + b + c)
+}
+```
+
+5. void 返回值
+- 允许没有返回值 or 返回 null（未开始严格检查 null 的情况下） or 返回 undefiend
+```TypeScript
+function f(): void {
+  console.log('hello')
+}
+function f(): void {
+  return undefined // 正确
+}
+function f(): void {
+  return null // 正确
+}
+```
+
+6. never 返回值
+- '注意，never 类型不同于 void 类型。前者表示函数没有执行结束，不可能有返回值；后者表示函数正常执行结束，但是不返回值，或者说返回 undefined'
+
+7. type 存在局部作用域
+
+### 阮一峰 ts 入门：对象
+1. 可选属性
+```TypeScript
+// 可选属性等同于 undefined
+const objOne: {
+  x: number;
+  y?: number
+} = { x: 1 }
+
+const objTwo: {
+  x: number;
+  y: number | undefined
+} = { x: 1 }
+```
+
+2. 创建空对象
+```TypeScript
+// 空对象可以被赋值，不能对属性进行操作
+let objOne: {} = {}
+let objectTwo: Object = {}
+objOne = { name: 'name' } // yes
+console.log(objOne.name) // error
+
+// 没有任何属性的空对象
+interface WithoutProperties {
+  [key: string]: never
+}
+// 报错：interface 定义的对象值为 never 类型，即不存在
+const a: WithoutProperties = { prop: 1 }
+```
+
+### 阮一峰 ts 入门：interface
+1. interface 中函数做键与函数重载
+```TypeScript
+interface A {
+  f(): number
+  f(x: boolean): boolean
+  f(x: string, y: string): string
+}
+
+function MyFunc(): number
+function MyFunc(x: boolean): boolean
+function MyFunc(x: string, y: string): string
+// 根据条件进行函数重载实现
+function MyFunc(x?: boolean | string, y?: string): number | boolean | string {
+  if (x === undefined && y === undefined) return 1
+  if (typeof x === 'boolean' && y === undefined) return true
+  if (typeof x === 'string' && typeof y === 'string') return 'hello'
+  throw new Error('wrong parameters')
+}
+
+const a: A = {
+  f: MyFunc,
+}
+```
+
+2. 如何给 interface 添加新的类型属性？
+```TypeScript
+// 定义同名 interface 即可
+interface A {
+  name: string
+}
+interface A {
+  age: string
+}
+const obj: A = { name: 'name', age: 'age' }
+```
+
+### 阮一峰 ts 入门：类（class
+1. 类满足 interface or type（implements 关键字
+```TypeScript
+interface Country {
+  name: string
+  capital: string
+}
+// 或者
+type Country = {
+  name: string
+  capital: string
+}
+
+// 类 MyCountry 满足 interface or type Country；同时可扩展自己的类型属性
+class MyCountry implements Country {
+  name = ''
+  capital = ''
+  info: string = ''
+}
+```
+
+2. 类的可访问性修饰符
+- public：public 修饰符表示这是公开成员，外部可以自由访问
+- private：private 修饰符表示私有成员，只能用在当前类的内部，类的实例和子类都不能使用该成员；子类不能定义父类私有成员的同名成员；可通过 []、in 操作符访问
+- #（es2022 后版本定义私有成员）：真正的私有成员
+- protected：protected 修饰符表示该成员是保护成员，只能在类的内部使用该成员，实例无法使用该成员，但是子类内部可以使用；可以定义同名成员
+```TypeScript
+// 子类通过 []、in 访问父类私有成员
+class A {
+  private x = 1
+}
+const a = new A()
+a['x'] // 1
+if ('x' in a) {
+  // 正确
+  // ...
+}
+
+// # 定义私有成员
+class A {
+  #x = 1
+}
+const a = new A()
+a['x'] // 报错
+```
+
+3. 静态成员（static 关键字
+```TypeScript
+// 只能通过原始类访问到静态成员，不能通过实例对象调用
+class MyClass {
+  static x = 0
+  static printX() {
+    console.log(MyClass.x)
+  }
+}
+
+MyClass.x // 0
+MyClass.printX() // 0
+
+// 上述的例外情况：public和protected的静态成员可以被继承
+class A {
+  public static x = 1
+  protected static y = 1
+}
+
+// B 继承 A，可访问其 public、protected 的静态成员
+class B extends A {
+  static getY() {
+    return B.y
+  }
+}
+
+B.x // 1
+B.getY() // 1
+```
+
+4. 抽象类
+```TypeScript
+abstract class A {
+  id = 1
+}
+
+const a = new A() // 报错
+```
+
+### 阮一峰 ts 入门：泛型
+1. 类型别名的泛型
+```TypeScript
+type Container<T> = { value: T }
+const a: Container<number> = { value: 0 }
+const b: Container<string> = { value: 'b' }
+
+// 定义 tree 结构
+type Tree<T> = {
+  value: T
+  left: Tree<T> | null
+  right: Tree<T> | null
+}
+```
+
+2. 对泛型的约束
+```TypeScript
+// 必须有 length 属性
+function comp<T extends { length: number }>(a: T, b: T) {
+  if (a.length >= b.length) {
+    return a
+  }
+  return b
+}
+comp([1, 2], [1, 2, 3]) // 正确
+comp('ab', 'abc') // 正确
+comp(1, 2) // 报错
+
+// 默认值
+type Fn<A extends string, B extends string = 'world'> = [A, B]
+type Result = Fn<'hello'> // ["hello", "world"]
+
+// 引用参数的约束条件（不能引用自身
+<T, U extends T>
+<T extends U, U>
+```
+
+### 阮一峰 ts 入门：枚举类型（enum
+1. enum 成员值都是只读的，不能重新赋值
+```TypeScript
+enum Foo {
+  A,
+  B,
+  C,
+}
+const Bar = {
+  A: 0,
+  B: 1,
+  C: 2,
+}
+if (x === Foo.A) {}
+// 等同于
+if (x === Bar.A) {}
+
+// 只读（加上 const 更易于理解
+const enum Color {
+  Red,
+  Green,
+  Blue
+}
+```
+
+2. 同名 enum 结构会自动合并
+
+3. 字符串 enum
+```TypeScript
+enum MyEnum {
+  One = 'One',
+  Two = 'Two',
+}
+
+let s = MyEnum.One
+s = 'One' // 报错
+
+function f(arg: MyEnum) {
+  return 'arg is ' + arg
+}
+f('One') // 报错
+f(MyEnum.One) // 报错
+```
+
+### 阮一峰 ts 入门：类型断言
+1. 是什么：'TypeScript 提供了“类型断言”这样一种手段，允许开发者在代码中“断言”某个值的类型，告诉编译器此处的值是什么类型。TypeScript 一旦发现存在类型断言，就不再对该值进行类型推断，而是直接采用断言给出的类型'
+
+2. 坏处：错误的类型断言会让错误的代码通过类型编译
+
+3. 断言条件：类型断言要求实际的类型与断言的类型兼容，实际类型可以断言为一个更加宽泛的类型（父类型），也可以断言为一个更加精确的类型（子类型），但不能断言为一个完全无关的类型
+```TypeScript
+// 当前类型断言到更宽泛 or 更精确的类型
+const n = 1;
+const m: string = n as string // 报错
+
+// 绕过断言条件：通过 any、unknown 类型作为中间类型断言
+expr as any or unknown as T
+const n = 1
+const m: string = n as unknown as string // 正确
+```
+
+4. as const 断言
+- 只能用于字面量；不能用于变量、表达式
+```TypeScript
+// 应用于变量
+let s = 'JavaScript';
+setLang(s as const); // 报错
+
+// 应用于表达式
+let s = ('Java' + 'Script') as const; // 报错
+
+// 应用于对象
+const v1 = {
+  x: 1,
+  y: 2,
+}; // 类型是 { x: number; y: number; }
+
+const v2 = {
+  x: 1 as const,
+  y: 2,
+}; // 类型是 { x: 1; y: number; }
+
+const v3 = {
+  x: 1,
+  y: 2,
+} as const; // 类型是 { readonly x: 1; readonly y: 2; }
+```
+
+5. ! 非空断言
+```TypeScript
+// ! 断言 root 不为 null
+const root = document.getElementById('root')!;
+root.addEventListener('click', e => {
+  /* ... */
+});
+
+// 保险做法（手动判断更保险
+const root = document.getElementById('root');
+
+if (root === null) {
+  throw new Error('Unable to find DOM element #root');
+}
+
+root.addEventListener('click', e => {
+  /* ... */
+});
+```
+
+6. 断言函数
+```TypeScript
+// 写法一
+const assertIsNumber = (
+  value:unknown
+):asserts value is number => {
+  if (typeof value !== 'number')
+    throw Error('Not a number');
+};
+
+// 写法二
+type AssertIsNumber =
+  (value:unknown) => asserts value is number;
+
+const assertIsNumber: AssertIsNumber = (value) => {
+  if (typeof value !== 'number')
+    throw Error('Not a number');
+};
+```
+
+7. 类型保护函数（返回 boolean 值：true、false
+```TypeScript
+function isString(
+  value:unknown
+): value is string {
+  return typeof value === 'string';
+}
+```
+
+8. 断言函数、类型保护函数：两者具体对参数类型的判断都需在函数内部实现
+
+### 阮一峰 ts 入门：模块
+1. import type 语句
+```TypeScript
+// a.ts
+export interface A {
+  foo: string;
+}
+export let a = 123;
+
+// b.ts
+// 正确
+import type { A } from './a';
+let b: A = 'hello';
+// 报错
+import type { a } from './a';
+let b = a;
+```
+
+2. export type 语句
+```TypeScript
+type A = 'a';
+type B = 'b';
+// 方法一
+export {type A, type B};
+// 方法二
+export type {A, B};
+```
+
+### 阮一峰 ts 入门：类型运算符
+1. keyof 运算符
+```TypeScript
+// 联合类型
+type A = { a: string; z: boolean };
+type B = { b: string; z: boolean };
+// 返回 'z'
+type KeyT = keyof (A | B);
+
+// 交叉类型
+type A = { a: string; x: boolean };
+type B = { b: string; y: number };
+// 返回 'a' | 'x' | 'b' | 'y'
+type KeyT = keyof (A & B);
+// 相当于
+keyof (A & B) ≡ keyof A | keyof B
+
+// 返回值组成的类型
+type MyObj = {
+  foo: number,
+  bar: string,
+};
+type Keys = keyof MyObj;
+type Values = MyObj[Keys]; // number|string
+```
+
+2. in 运算符
+- TypeScript 语言的类型运算中，in 运算符有不同的用法，用来取出（遍历）联合类型的每一个成员类型
+```TypeScript
+type U = 'a'|'b'|'c';
+type Foo = {
+  [Prop in U]: number;
+};
+// 等同于
+type Foo = {
+  a: number,
+  b: number,
+  c: number
+};
+```
+
+3. [] 运算符
+- 方括号运算符（[]）用于取出对象的键值类型，比如 T[K] 会返回对象 T 的属性 K 的类型
+```TypeScript
+type Person = {
+  age: number;
+  name: string;
+  alive: boolean;
+};
+// number|string
+type T = Person['age'|'name'];
+// number|string|boolean
+type A = Person[keyof Person];
+
+// 方括号内不能有值的运算
+// 示例一
+const key = 'age';
+type Age = Person[key]; // 报错
+// 示例二
+type Age = Person['a' + 'g' + 'e']; // 报错
+```
+
+4. extends ? 条件运算符
+```TypeScript
+// tpl
+T extends U ? X : Y
+
+// [] 将传入泛型作为整体
+// 示例一（返回联合类型
+type ToArray<Type> =
+  Type extends any ? Type[] : never;
+// string[]|number[]
+type T = ToArray<string|number>;
+// 示例二
+type ToArray<Type> =
+  [Type] extends [any] ? Type[] : never;
+// (string | number)[]
+type T = ToArray<string|number>;
+
+// 嵌套使用
+type LiteralTypeName<T> =
+  T extends undefined ? "undefined" :
+  T extends null ? "null" :
+  T extends boolean ? "boolean" :
+  T extends number ? "number" :
+  T extends bigint ? "bigint" :
+  T extends string ? "string" :
+  never;
+// "bigint"
+type Result1 = LiteralTypeName<123n>;
+// "string" | "number" | "boolean"
+type Result2 = LiteralTypeName<true | 1 | 'a'>;
+```
+
+5. 交叉类型和联合类型
+- 注意以下情况
+```TypeScript
+type TypeOne = number | string // number | string
+type TypeTwo = number & string // 不存在这种类型
+
+// 用 keyof 的情况下
+type A = { a: string; z: boolean };
+type B = { b: string; z: boolean };
+// 返回 'z'
+type KeyT = keyof (A | B);
+
+// 交叉类型
+type A = { a: string; x: boolean };
+type B = { b: string; y: number };
+// 返回 'a' | 'x' | 'b' | 'y'
+type KeyT = keyof (A & B);
+// 相当于
+keyof (A & B) ≡ keyof A | keyof B
+```
+
+6. infer 关键字
+```TypeScript
+type MyType<T> =
+  T extends {
+    a: infer M,
+    b: infer N
+  } ? [M, N] : never;
+// 用法示例
+type T = MyType<{ a: string; b: number }>;
+// [string, number]
+
+type Str = 'foo-bar';
+type Bar = Str extends `foo-${infer rest}` ? rest : never // 'bar'
+
+// 推断函数参数类型
+type ParametersType<T> = T extends (...args: infer P) => any ? P : never;
+type ExampleFunction2 = (a: number, b: string) => void;
+type ExampleParametersType = ParametersType<ExampleFunction2>; // [number, string]
+
+// 推断元组的第一个元素类型
+type FirstElement<T> = T extends [infer U, ...any[]] ? U : never;
+type ExampleTuple = [number, string, boolean];
+type ExampleFirstElement = FirstElement<ExampleTuple>; // number
+
+// 推断 Promise 的返回类型
+type PromiseType<T> = T extends Promise<infer U> ? U : never;
+type ExamplePromise = Promise<number>;
+type ExamplePromiseType = PromiseType<ExamplePromise>; // number
+
+// 推断数组元素的类型
+type ElementType<T> = T extends (infer U)[] ? U : never;
+type ExampleArray = string[];
+type ExampleElementType = ElementType<ExampleArray>; // string
+
+// 推断函数的返回类型
+type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+type ExampleFunction = (a: number, b: string) => boolean;
+type ExampleReturnType = ReturnType<ExampleFunction>; // boolean
+```
+
+7. is 运算符
+- 主要用来创建类型保护函数
+```TypeScript
+type A = { a: string };
+type B = { b: string };
+
+// 返回 true - x 一定是 A 类型；false 反之
+function isTypeA(x: A|B): x is A {
+  if ('a' in x) return true;
+  return false;
+}
+
+// 检查联合类型
+type Shape = Circle | Square;
+type Circle = { kind: "circle"; radius: number };
+type Square = { kind: "square"; sideLength: number };
+function isCircle(shape: Shape): shape is Circle {
+  return shape.kind === "circle";
+}
+const myShape: Shape = { kind: "circle", radius: 10 };
+if (isCircle(myShape)) {
+  console.log(myShape.radius); // TypeScript 知道 myShape 是 Circle 类型
+}
+
+// 结合 is 运算符和联合类型
+type Animal = { name: string };
+type Cat = Animal & { meow: () => void };
+type Dog = Animal & { bark: () => void };
+function isCat(animal: Animal): animal is Cat {
+  return (animal as Cat).meow !== undefined;
+}
+function isDog(animal: Animal): animal is Dog {
+  return (animal as Dog).bark !== undefined;
+}
+const pet: Animal = { name: "Whiskers", meow: () => console.("Meow!") };
+if (isCat(pet)) {
+  pet.meow(); // TypeScript 知道 pet 是 Cat 类型
+} else if (isDog(pet)) {
+  pet.bark(); // TypeScript 知道 pet 是 Dog 类型
+}
+
+// 使用类型保护函数过滤数组
+function isNumber(value: any): value is number {
+  return typeof value === 'number';
+}
+const values: any[] = [1, "hello", 2, "world", 3];
+const numbers = values.filter(isNumber);
+console.log(numbers); // [1, 2, 3]
+
+// 定义类型保护函数
+function isString(value: any): value is string {
+  return typeof value === 'string';
+}
+const value: any = "hello";
+if (isString(value)) {
+  console.log(value.toUpperCase()); // TypeScript 知道 value 是 string 类型
+}
+```
+
+8. 模版字符串
+- 可引用的类型：string、number、boolean、null、undefined、bigint、Enum
+```TypeScript
+type Num = 123;
+type Obj = { n : 123 };
+
+type T1 = `${Num} received`; // 正确
+type T2 = `${Obj} received`; // 报错（不可引用对象类型
+
+// 单个联合类型
+type T = 'A'|'B';
+// "A_id"|"B_id"
+type U = `${T}_id`;
+
+// 多个联合类型
+type T = 'A'|'B';
+type U = '1'|'2';
+// 'A1'|'A2'|'B1'|'B2'
+type V = `${T}${U}`;
+```
+
 
 ### others
 1. 函数重载
@@ -607,7 +1455,7 @@ console.log(sum([1, 2, 3], [4, 5])); // Error: Arrays must have the same length
 ```
 
 3. react 中定义组件时为其传入的属性定义类型
-```JavaScript
+```TypeScript
 import * as React from 'react';
 
 interface HomeProps {
@@ -694,7 +1542,7 @@ type TName = {
 7. as const and Object.freeze
 - Object.freeze：返回值为对象自身（即返回值也被冻结）
 - Object.isFrozen()；返回 true、false
-```JavaScript
+```TypeScript
 // as const 可将属性设置为 readonly
 const objOne = {
   name: 'john',

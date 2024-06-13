@@ -403,8 +403,8 @@ var flat = function (arr, n) {
 
 ### 实现 Array.prototype.flat()
 - link：https://bigfrontend.dev/zh/problem/implement-Array-prototype.flat
-```
-<!-- depth 展开深度默认 1 -->
+```JavaScript
+// depth 展开深度默认 1
 function flat(arr, depth = 1) {
   let result = []
   arr.forEach((item) => {
@@ -421,6 +421,28 @@ function flat(arr, depth = 1) {
   return depth ? arr.reduce((pre, cur) => {
     return [...pre, ...(Array.isArray(cur) ? flat(cur, depth - 1) : [cur])]
   }, []) : arr;
+}
+
+// 扩展 Array 方法
+Array.prototype.flatDefault = function (depth = 1) {
+  return depth
+    ? this.reduce((pre, cur) => {
+        return [
+          ...pre,
+          ...(Array.isArray(cur) ? cur.flatDefault(depth - 1) : [cur]),
+        ]
+      }, [])
+    : this
+}
+
+// 默认 Infinity
+Array.prototype.flatDefault = function (depth = 1) {
+  return this.reduce((pre, cur) => {
+    return [
+      ...pre,
+      ...(Array.isArray(cur) ? cur.flatDefault() : [cur]),
+    ]
+  }, [])
 }
 ```
 
