@@ -207,6 +207,19 @@ type Color = 'red'
 if (Math.random() < 0.5) {
   type Color = 'blue'
 }
+
+// 联合、交叉类型作用于基本类型和对象类型之间的差别
+// 基本类型
+type A = number | string
+type B = boolean | string
+type C = A & B // string
+type D = A | B // number | string | boolean
+
+// 对象类型
+type A1 = { name: string, age: number }
+type B1 = { name: string, sex: string }
+type C1 = A1 & B1 // { name: string, age: number, sex: string }
+type D1 = A1 | B1 // { name: string, age: number } | { name: string, sex: string }
 ```
 
 3. 字面量类型 or 字面量联合、交叉类型（通过类型别名更严格的定义类型
@@ -317,7 +330,7 @@ console.log('2', myFuncOne('1', '2')) // 12
 
 ### unknown type（可通过类型断言得到实际业务逻辑中需要的类型 or 兼容历史 interface 定义
 - unknown 类型 = 万能类型 + 类型检查
-- 可以视为严格版的 any
+- 可以视为严格版的 any；定义的变量只能赋值给 any、unknown 类型，避免了类型污染（类型污染问题是值定义为 any 类型的变量可以被赋值给任意的其它变量，这样就导致了类型污染，污染程度看实际业务中被赋值变量的范围）
 
 1. unknown 类型断言到具体类型（number、string）；具体类型断言到 unknown 类型（兼容历史 interface 定义）
 ```TypeScript
@@ -337,13 +350,13 @@ function myFuncOne(params: unknown) {
   })
 }
 
+// 通过将 unknown 类型的变量进行类型缩小操作，可以将该变量用于其它操作；或者通过类型断言将其类型暂时转换
 // unknown 的类型缩小
 let a: unknown = 1
 // unknown 缩小为 number
 if (typeof a === 'number') {
   let r = a + 10 // 正确
 }
-
 let s: unknown = 'hello'
 // unknown 缩小为 string
 if (typeof s === 'string') {
@@ -362,6 +375,39 @@ function fn(x: string | number) {
   } else {
     x // never 类型
   }
+}
+```
+
+### any、unknown、never
+1. 其中 any、unknown 是顶层类型；never 是底层类型
+```TypeScript
+// never 例子
+function throwError(message: string): never {
+  throw new Error(message);
+}
+function infiniteLoop(): never {
+  while (true) {}
+}
+let neverValue: never;
+// 任何值都不能赋值给 never 类型的变量
+// neverValue = 10;   // Error
+// neverValue = "hi"; // Error
+// neverValue = true; // Error
+
+// any 例子
+let anyValue: any;
+let unknownValue: unknown;
+anyValue = 10;          // ok
+anyValue = "hello";     // ok
+anyValue = true;        // ok
+
+// unknown 例子
+unknownValue = 10;      // ok
+unknownValue = "hello"; // ok
+unknownValue = true;    // ok
+// 需要类型断言或类型检查才能使用 unknown 类型的变量
+if (typeof unknownValue === 'string') {
+  console.log(unknownValue.toUpperCase()); // ok
 }
 ```
 
@@ -675,7 +721,7 @@ console.log(multiArray) // 输出: [ 'hello', 42, [ 'world', 100 ], [ 'new', 200
 ```
 
 4. Readonly number[] 和 numebr[]
-- 'TypeScript 将readonly number[]与number[]视为两种不一样的类型，后者是前者的子类型；这是因为只读数组没有pop()、push()之类会改变原数组的方法，所以number[]的方法数量要多于readonly number[]，这意味着number[]其实是readonly number[]的子类型；我们知道，子类型继承了父类型的所有特征，并加上了自己的特征，所以子类型number[]可以用于所有使用父类型的场合，反过来就不行'
+- 'TypeScript 将 readonly number[] 与 number[] 视为两种不一样的类型，后者是前者的子类型；这是因为只读数组没有 pop()、push() 之类会改变原数组的方法，所以 number[] 的方法数量要多于 readonly number[]，这意味着 number[] 其实是 readonly number[] 的子类型；我们知道，子类型继承了父类型的所有特征，并加上了自己的特征，所以子类型 number[] 可以用于所有使用父类型的场合，反过来就不行'
 - 子类型继承父类型并扩展父类型没有的功能
 
 ### 阮一峰 ts 入门：元组
@@ -689,7 +735,7 @@ let arr2: [number] = [1]
 let a: [number, number?] = [1]
 
 type myTuple1 = [number?, number, number?, string?] // 非法，? 在头部
-type myTuple2 = [number?, number, number?, string?] // 合法
+type myTuple2 = [number, number?, number?, string?] // 合法
 ```
 
 ### 阮一峰 ts 入门：symbol
@@ -1138,6 +1184,22 @@ function isString(
 ```
 
 8. 断言函数、类型保护函数：两者具体对参数类型的判断都需在函数内部实现
+```TypeScript
+// 类型断言导致运行时错误
+let unknownValue: unknown = 42;
+let stringValue: string = unknownValue as string; // 类型断言，编译器不会报错
+// 运行时尝试调用字符串方法，会导致错误
+console.log(stringValue.toUpperCase()); // 运行时错误：TypeError: stringValue.toUpperCase is not a function
+
+// 通过类型保护函数保护
+let unknownValue: unknown = 42;
+if (typeof unknownValue === 'string') {
+  let stringValue: string = unknownValue; // 类型检查后赋值，确保类型安全
+  console.log(stringValue.toUpperCase()); // 运行时安全
+} else {
+  console.log("The value is not a string");
+}
+```
 
 ### 阮一峰 ts 入门：模块
 1. import type 语句
@@ -1191,6 +1253,16 @@ type MyObj = {
 };
 type Keys = keyof MyObj;
 type Values = MyObj[Keys]; // number|string
+
+// keyof 在业务中的实际运用
+// 限制函数的参数类型，自动推断函数返回类型（参数 T、K 的类型得到了限制，减少错误产生
+function getValue<T extends Object, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+const objOne = { name: '张三', age: 18 }
+// 只能传入 objOne 对象上有点属性，这里是 name、age
+const valueOne = getValue(objOne, 'name')
+const valueTwo = getValue(objOne, 'age')
 ```
 
 2. in 运算符
@@ -1401,6 +1473,298 @@ type U = '1'|'2';
 // 'A1'|'A2'|'B1'|'B2'
 type V = `${T}${U}`;
 ```
+
+### 阮一峰 ts 入门：类型映射
+1. 是什么：映射（mapping）指的是，将一种类型按照映射规则，转换成另一种类型，通常用于对象类型
+```TypeScript
+// number to string
+type A = {
+  foo: number;
+  bar: number;
+};
+type B = {
+  [prop in keyof A]: string;
+};
+
+// mapping 自身
+type A = {
+  foo: number;
+  bar: number;
+};
+type B = {
+  [prop in keyof A]: A[prop];
+};
+
+// mapping 全部映射为可选
+type A = {
+  a: string;
+  b: number;
+};
+type B = {
+  [Prop in keyof A]?: A[Prop];
+};
+
+// Readonly<T> 内置工具类型的实现
+// 将 T 的所有属性改为只读属性
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P];
+};
+```
+
+2. 映射修饰符
+- +?、-?、+readonly、-readonly
+```TypeScript
+// 增加
+type MyObj<T> = {
+  +readonly [P in keyof T]+?: T[P];
+};
+// 移除
+type MyObj<T> = {
+  -readonly [P in keyof T]-?: T[P];
+}
+
+// Required<T> 内置工具类型的实现
+// 全部移除可选，变为必选属性
+type Required<T> = {
+  [P in keyof T]-?: T[P];
+};
+```
+
+3. 键名重映射
+```TypeScript
+// 01
+type A = {
+  foo: number;
+  bar: number;
+};
+type B = {
+  [p in keyof A as `${p}ID`]: number;
+};
+// 等同于
+type B = {
+  fooID: number;
+  barID: number;
+};
+
+// 02
+interface Person {
+  name: string;
+  age: number;
+  location: string;
+}
+// Capitalize<T>：内置工具类型
+type Getters<T> = {
+  [P in keyof T
+    as `get${Capitalize<string & P>}`]: () => T[P];
+};
+type LazyPerson = Getters<Person>;
+// 等同于
+type LazyPerson = {
+  getName: () => string;
+  getAge: () => number;
+  getLocation: () => string;
+}
+```
+
+4. 属性过滤
+```TypeScript
+type User = {
+  name: string,
+  age: number
+}
+type Filter<T> = {
+  [K in keyof T
+    as T[K] extends string ? K : never]: string
+}
+type FilteredUser = Filter<User> // { name: string }
+```
+
+5. 联合类型的映射
+```TypeScript
+type S = {
+  kind: 'square',
+  x: number,
+  y: number,
+};
+type C = {
+  kind: 'circle',
+  radius: number,
+};
+type MyEvents<Events extends { kind: string }> = {
+  [E in Events as E['kind']]: (event: E) => void;
+}
+// 传入联合类型
+type Config = MyEvents<S|C>;
+// 等同于
+type Config = {
+  square: (event:S) => void;
+  circle: (event:C) => void;
+}
+```
+
+### 阮一峰 ts 入门：类型工具
+1. `Awaited<Type>`
+```TypeScript
+// 多层
+// number
+type B = Awaited<Promise<Promise<number>>>;
+
+// 非 Promsie 类型
+// number | boolean
+type C = Awaited<boolean | Promise<number>>;
+```
+
+2. `Exclude<Type, Union>`
+```TypeScript
+// 例子
+type T1 = Exclude<'a'|'b'|'c', 'a'>; // 'b'|'c'
+type T2 = Exclude<'a'|'b'|'c', 'a'|'b'>; // 'c'
+type T3 = Exclude<string|(() => void), Function>; // string
+type T4 = Exclude<string | string[], any[]>; // string
+type T5 = Exclude<(() => void) | null, Function>; // null
+type T61 = Exclude<200 | 400, 200 | 201>; // 400
+type T62 = Exclude<200 | 400, 200 | 201 | 400>; // never
+type T7 = Exclude<number, boolean>; // number
+
+// 实现（返回的 never 可以省去
+type Exclude<T, U> = T extends U ? never : T
+```
+
+2. `Extract<Type, Union>`
+```TypeScript
+// 例子
+type T1 = Extract<'a'|'b'|'c', 'a'>; // 'a'
+type T2 = Extract<'a'|'b'|'c', 'a'|'b'>; // 'a'|'b'
+type T3 = Extract<'a'|'b'|'c', 'a'|'d'>; // 'a'
+type T4 = Extract<string | string[], any[]>; // string[]
+type T5 = Extract<(() => void) | null, Function>; // () => void
+type T6 = Extract<200 | 400, 200 | 201>; // 200
+
+// 特殊情况
+type T01 = Extract<string|number, boolean>; // never
+type T02 = Extract<200 | 400, 111>; // never
+
+// 实现
+type Extract<T, U> = T extends U ? T : never
+```
+
+3. `NonNullable<Type>`
+- 移除 null 和 undefined
+```TypeScript
+// 例子
+// string|number
+type T1 = NonNullable<string|number|undefined>;
+// string[]
+type T2 = NonNullable<string[]|null|undefined>;
+type T3 = NonNullable<boolean>; // boolean
+type T4 = NonNullable<number|null>; // number
+type T5 = NonNullable<string|undefined>; // string
+type T6 = NonNullable<null|undefined>; // never
+
+// 实现
+// null、undefined 不属于 Object
+type NonNullable<T> = T & {} = T & Object
+```
+
+4. Omit
+- link：https://wangdoc.com/typescript/utility#omittype-keys
+```TypeScript
+// 实现
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+```
+
+5. Partical
+- link：https://wangdoc.com/typescript/utility#partialtype
+```TypeScript
+// 实现
+type Partical<T> = {
+  [P in keyof T]?: T[P]
+  or
+  [P in keyof T]+?: T[P]
+}
+```
+
+6. Pick
+- link：https://wangdoc.com/typescript/utility#picktype-keys
+```TypeScript
+// 实现
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P]
+}
+```
+
+7. Readonly
+- link：https://wangdoc.com/typescript/utility#readonlytype
+```TypeScript
+// 实现只读
+type Readonly<T> = {
+  +readonly [P in keyof T]: T[P];
+};
+
+// 实现不只读
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+```
+
+8. Record
+- link：https://wangdoc.com/typescript/utility#recordkeys-type
+```TypeScript
+// 例子
+// { a: number, b: number }
+type T = Record<'a'|'b', number>;
+// { a: number|string }
+type T = Record<'a', number|string>;
+
+// 实现
+type Record<K extends string|number|symbol, T> = { [P in K]: T; }
+```
+
+
+9. Required
+- link：https://wangdoc.com/typescript/utility#requiredtype
+```TypeScript
+// 实现
+type Required<T> = {
+  [P in keyof T]-?: T[P];
+};
+```
+
+10. 字符串内置工具类型
+- Uppercase、Lowercase、Capitalize（首字母大写）、Uncapitalize（首字母小写）
+
+11. `Equal<T, U>`
+- 用来判断两个类型是否相等
+```TypeScript
+// T 可以赋值给 U 且 U 可以赋值给 T 时两者才相等
+type Equal<T, U> = T extends U ? (U extends T ? true : false) : false
+```
+
+12. `Expect<T>`
+```TypeScript
+// 确保类型 T 是 true 类型
+type Expect<T extends true> = T
+```
+
+### 阮一峰 ts 入门：注释指令
+1. @ts-nocheck、@ts-check：作用于文件顶部
+
+2. @ts-ignore：作用于下一行
+
+3. JSDoc
+```JavaScript
+// 例子 01（接收参数 somebody 的类型为 string
+/**
+ * @param {string} somebody
+ */
+function sayHello(somebody) {
+  console.log('Hello ' + somebody);
+}
+```
+
+### 阮一峰 ts 入门：tsconfig.json
+- link：https://wangdoc.com/typescript/tsconfig.json
+
 
 
 ### others
