@@ -1,7 +1,7 @@
 ### sleep
 - solution: https://leetcode.cn/problems/sleep/solutions/2506139/shui-mian-han-shu-by-leetcode-solution-vuse/
 
-```
+```JavaScript
 /**
  * @param {number} millis
  * @return {Promise}
@@ -21,7 +21,7 @@ async function sleep(millis) {
 ### 数组最后一个元素
 - arr[arr.length - 1]
 - at(-1)
-```
+```JavaScript
 /**
  * @return {null|boolean|number|string|Array|Object}
  */
@@ -37,7 +37,7 @@ Array.prototype.last = function() {
 ```
 
 ### counter 计数器
-```
+```JavaScript
 /**
  * @param {number} n
  * @return {Function} counter
@@ -57,7 +57,7 @@ var createCounter = function(n) {
 ```
 
 ### 复合函数
-```
+```JavaScript
 // 可以使用 reduceRight（reduce 反向
 /**
  * @param {Function[]} functions
@@ -79,7 +79,7 @@ var compose = function(functions) {
 ```
 
 ### 过滤数组中的元素（实现 filter
-```
+```JavaScript
 /**
  * @param {number[]} arr
  * @param {Function} fn 接受 item or index 作为参数
@@ -98,7 +98,7 @@ var filter = function(arr, fn) {
 
 ### 转换数组中的每个数
 - forEach、map、for of、for in
-```
+```JavaScript
 // for of 拿到 index（解构赋值时 index 在前、value 在后
 const arr = ['a', 'b', 'c'];
 
@@ -108,7 +108,7 @@ for (const [index, value] of arr.entries()) {
 ```
 
 ### 计数器
-```
+```JavaScript
 /**
  * @param {integer} init
  * @return { increment: Function, decrement: Function, reset: Function }
@@ -132,7 +132,7 @@ var createCounter = function(init) {
 ```
 
 ### toBe and notToBe
-```
+```JavaScript
 /**
  * @param {string} val
  * @return {Object}
@@ -159,7 +159,7 @@ var expect = function(val) {
 ### 函数记忆化
 - https://leetcode.cn/problems/memoize/description/?envType=study-plan-v2&envId=30-days-of-javascript
 - 利用 obj or map 中 key 的唯一性
-```
+```JavaScript
 /**
  * @param {Function} fn
  * @return {Function}
@@ -203,7 +203,7 @@ function memoize(fn) {
 
 ### debounce
 - link：https://leetcode.cn/problems/debounce/submissions/533271284/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Function} fn
  * @param {number} t milliseconds
@@ -231,7 +231,7 @@ var debounce = function(fn, t) {
 ### 并行执行异步函数
 - link：https://leetcode.cn/problems/execute-asynchronous-functions-in-parallel/description/?envType=study-plan-v2&envId=30-days-of-javascript
 - 模拟 Promise.all()
-```
+```JavaScript
 /**
  * @param {Array<Function>} functions
  * @return {Promise<any>}
@@ -271,7 +271,7 @@ var promiseAll = function(functions) {
 
 ### 判断对象是否为空
 link：https://leetcode.cn/problems/is-object-empty/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Object|Array} obj
  * @return {boolean}
@@ -290,7 +290,7 @@ var isEmpty = function(obj) {
 
 ### 分块数组
 - link：https://leetcode.cn/problems/chunk-array/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Array} arr
  * @param {number} size
@@ -323,7 +323,7 @@ chunkFunc([1, 2, 3, 4, 5], 6)
 
 ### 实现 groupBy
 - link：https://leetcode.cn/problems/group-by/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Function} fn
  * @return {Object}
@@ -351,7 +351,7 @@ Array.prototype.groupBy = function (fn) {
 
 ### 根据 id 合并数组
 - link：https://leetcode.cn/problems/join-two-arrays-by-id/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Array} arr1
  * @param {Array} arr2
@@ -374,7 +374,7 @@ var join = function (arr1, arr2) {
 
 ### 实现扁平化函数 flat
 - link：https://leetcode.cn/problems/flatten-deeply-nested-array/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Array} arr
  * @param {number} depth
@@ -448,7 +448,7 @@ Array.prototype.flatDefault = function (depth = 1) {
 
 ### 精简对象
 - link：https://leetcode.cn/problems/compact-object/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {Object|Array} obj
  * @return {Object|Array}
@@ -489,7 +489,7 @@ console.log('here', func([null, 0, 5, [0], [false, 10]])) // [ 5, [], [ 10 ] ]
 
 ### 包装数组
 - link：https://leetcode.cn/problems/array-wrapper/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 /**
  * @param {number[]} nums
  * @return {void}
@@ -525,7 +525,7 @@ ArrayWrapper.prototype.toString = function() {
 
 ### 使用方法链（链式调用）的计算器
 - link：https://leetcode.cn/problems/calculator-with-method-chaining/description/?envType=study-plan-v2&envId=30-days-of-javascript
-```
+```JavaScript
 // 需要 return this 才可以链式调用
 class Calculator {
   /** 
@@ -590,4 +590,27 @@ class Calculator {
     return this.value
   }
 }
+```
+
+### 数加一
+1. BigInt 可以处理 Number 越界问题
+```JavaScript
+/**
+ * @param {number[]} digits
+ * @returns {number[]}
+ */
+function plusOne(digits) {
+  // digits 先转为数字加一在转为数组
+  return `${BigInt(digits.join('')) + 1n}`.split('');
+  // Number 处理数字越界
+  // return `${Number(digits.join('')) + 1}`.split('');
+}
+
+// Number 处理数字越界
+const num = Number(
+  [6, 1, 4, 5, 3, 9, 0, 1, 9, 5, 1, 8, 6, 7, 0, 5, 5, 4, 3].join('')
+)
+console.log(num) // => 614 5390 1951 8670 5000
+console.log(num > Number.MAX_SAFE_INTEGER) // => true 即 Number 能处理的数字超过了最大安全数字
+console.log(Number.MAX_SAFE_INTEGER) // => 9007 1992 5474 0991
 ```

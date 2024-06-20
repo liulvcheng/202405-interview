@@ -377,7 +377,7 @@ Promise.reject(3)
 - '函数声明提升：函数声明会提升到作用域的顶部。多次声明的同名函数，后声明的会覆盖前声明的'
 - '变量声明提升：变量声明会提升到作用域的顶部，但赋值操作会保留在原来的位置（只提升声明，不提升初始化）'
 - 函数声明比变量声明更靠前
-```
+```JavaScript
 function foo() {
   console.log('foo')
 }
@@ -389,11 +389,11 @@ foo()
 
 等价于下列代码
 
-var foo
-function foo(){ console.log('foo') }
+function foo(){ console.log('foo') } // 两者函数声明一样，或者覆盖前者
 function foo(){ console.log('bar') }
+var foo
 foo = 'here'
-foo()
+foo() // error：foo 是个变量，不能被当作函数调用
 ```
 
 12. var
@@ -538,7 +538,7 @@ console.log(arr.push(3)) // 3 - arr.length
 
 28. symbol
 - link：https://www.zhangxinxu.com/wordpress/2018/04/known-es6-symbol-function/
-- Symbol 具有唯一性；Symbol 类型是不可枚举的；Symbol 访问需要用到 `Object.getOwnPropertySymbols()` 方法
+- Symbol 具有唯一性；Symbol 类型是不可枚举的；Symbol 访问需要用到 `Object.getOwnPropertySymbols()` 方法（即普通的遍历方法拿不到 Object 中的 Symbol 属性，具有隐藏性 ）
 ```JavaScript
 typeof Symbol() === "symbol"
 typeof Symbol("foo") === "symbol"
@@ -861,6 +861,74 @@ function createArray(...elements) {
 
 let arr = createArray('a', 'b', 'c')
 console.log(arr[-1]) // c
+```
+
+40. 类数组转数组
+- 是什么：类数组指的是像 arguments，jquery 对象一样可以使用下标访问还有 length 属性的和数组很像但并不是数组的一类对象
+```JavaScript
+// es5
+function func() {
+  const array = Array.prototype.slice.call(arguments);
+  console.log(array.slice(0, 1)); // [ 'Google' ]
+  console.log(array.slice(0)); // [ 'Google', 'facebook', 'Microsoft' ]
+  console.log(array.slice(0, Infinity)); // [ 'Google', 'facebook', 'Microsoft' ]
+}
+func('Google', 'facebook', 'Microsoft')
+
+// es6 扩展运算符
+function func() {
+  console.log([...arguments]);
+}
+func('Google', 'facebook', 'Microsoft'); // [ 'Google', 'facebook', 'Microsoft' ]
+
+// es6 Array.from()
+function func() {
+  console.log(Array.from(arguments));
+}
+func('Google', 'facebook', 'Microsoft'); // [ 'Google', 'facebook', 'Microsoft' ]
+```
+
+41. call、apply、bind
+- 都可以用来改变 this 的指向
+- call、apply 接收参数不一样，call 接收多个参数，apply 接收多个参数组成的数组
+- bind 返回以原函数被绑定 this 后的新函数，该新函数绑定了 this 后就不能修改了，即使通过 call、apply 手动调用其他的 this 也不会，通过 bind 再次绑定其它 this 也没用
+```JavaScript
+// call、apply
+const defaultPerson = {
+  name: 'default',
+  age: 0,
+  info() {
+    console.log('name', this.name, 'age', this.age)
+  },
+}
+const person = { name: 'liu', age: 19 }
+defaultPerson.info.call(person) // name liu age 19
+defaultPerson.info.apply(person) // name liu age 19
+
+// bind
+function test() {
+  console.log(this)
+}
+// 一旦绑定后 this 不在改变
+let boundTest = test.bind({ name: 'ly' })
+boundTest() // => { name: 'ly' }
+boundTest = boundTest.bind({ name: 'dongdong' })
+boundTest() // => { name: 'ly' }
+boundTest.call({ name: 'bob' }) // => { name: 'ly' }
+
+// 多参函数转换为单个数组参数调用
+let arr1 = [1, 2, 3]
+let arr2 = [4, 5, 6]
+// 相当于 arr1.push(...arr2)：这里将 arr1 作为函数对 arr2 执行 push 方法，且对于 apply 来说，arr2 必须是个数组
+Array.prototype.push.apply(arr1, arr2)
+console.log(arr1) // [1, 2, 3, 4, 5, 6]
+
+// es6 方法
+arr1.push(...arr2)
+
+// 类数组转换为数组
+const array = Array.from(arguments)
+const array = [...arguments]
 ```
 
 ### answer
