@@ -1,4 +1,5 @@
-// 深拷贝
+### 深拷贝
+```JavaScript
 function cloneDeep(value) {
   const map = new Map()
 
@@ -33,8 +34,10 @@ const testDataThree = cloneDeep([1, 2, 3, [4, 5, [6, 7]]])
 console.log('testDataOne', testDataOne)
 console.log('testDataTwo', testDataTwo)
 console.log('testDataThree', testDataThree)
+```
 
-// 获取 array 最后一个元素
+# 获取 array 最后一个元素
+```JavaScript
 Array.prototype.getLastArayItem = function () {
   const arrayLength = this?.length
   return arrayLength ? this[arrayLength - 1] : -1
@@ -62,8 +65,10 @@ console.log('counter', counter)
 counter()
 counter()
 counter()
+```
 
-// 睡眠函数
+### 睡眠函数
+```JavaScript
 function sleep(millis) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -82,8 +87,10 @@ let t = Date.now()
 sleep(100).then(() => {
   console.log('time delay', Date.now() - t)
 })
+```
 
-// 手写 reduce
+### 手写 reduce
+```JavaScript
 let nums = [1, 2, 3, 4]
 const count = nums.reduce((pre, cur) => {
   return pre + cur
@@ -98,3 +105,4 @@ function selfReduce(init, nums) {
 }
 const result = selfReduce(0, nums)
 console.log('result 222', result)
+```
