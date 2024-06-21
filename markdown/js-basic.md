@@ -931,6 +931,46 @@ const array = Array.from(arguments)
 const array = [...arguments]
 ```
 
+42. 原型链
+- prototype、__proto__
+- 实例.__proto__ === 父类.prototype
+- __proto__ 指向该对象的原型；constructor 指向该对象的构造函数
+
+- ![prototype1](../interview-note/image/prototype1.png)
+- ![prototype2](../interview-note/image/prototype2.png)
+- ![prototype3](../interview-note/image/prototype3.png)
+
+```JavaScript
+class classUser {
+  constructor(name, age) {
+    this.name = name
+    this.age = age
+  }
+}
+// 在类 calssUser 上定义一个新的属性 info
+classUser.prototype.info = 'info'
+
+// 实例化
+const classLiu = new classUser('classLiu', 999)
+const classLi = new classUser('classLi', 888)
+
+console.log('1', classUser.prototype.info) // 'info'
+console.log('2', classLiu.__proto__.info) // 'info'
+// 从同一个父类实例化的两个实例都拥有同一个原型对象、构造函数
+console.log('3', classLiu.__proto__ === classLi.__proto__) // true
+// 实例化的 __proto__ === 父类的 prototype
+console.log('4', classLiu.__proto__ === classUser.prototype) // true
+
+console.log(classLiu.__proto__, classLiu.constructor) // { info: 'info' }, [class classUser]
+```
+
+- new Object
+```JavaScript
+const obj1 = {}
+const obj2 = new Object()
+console.log(obj1.constructor === obj2.constructor) // true
+```
+
 ### answer
 1. null vs undefined
 - undefined 用于指示不存在任何值或者缺少属性；如定义了变量未赋值该变量默认会是 undefined，或者函数接受参数时但是未传参该参数会默认是 undefiend；用于变量声明未赋值、函数无返回参数或默认传参但没传、访问对象不存在的属性
