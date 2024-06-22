@@ -128,6 +128,9 @@ function remove(n0) {
 - 不加 shift：切换 tab 文件
 - 加...：移动 tab 文件
 
+6. 添加 JSDoc
+- 输入 `/**` return 即可
+
 ### vim 简明教程
 1. normal 模式
 - :wq、ZZ（存盘退出
