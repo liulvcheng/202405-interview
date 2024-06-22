@@ -695,4 +695,31 @@ A extends B
   : false
 ```
 
+### uniapp 位置相关
+1. link：https://uniapp.dcloud.net.cn/api/location/location.html#chooselocation
+
+2. uni.getLocation()
+```JavaScript
+uni.getLocation({
+  // wgs84 默认返回 gps 坐标
+  type: 'wgs84',
+  success: function (res) {
+    console.log('当前位置的经度：' + res.longitude)
+    console.log('当前位置的纬度：' + res.latitude)
+  },
+})
+```
+
+3. uni.chooseLocation()
+```JavaScript
+uni.chooseLocation({
+  success: function (res) {
+    console.log('位置名称：' + res.name)
+    console.log('详细地址：' + res.address)
+    console.log('纬度：' + res.latitude)
+    console.log('经度：' + res.longitude)
+  },
+})
+```
+
 
