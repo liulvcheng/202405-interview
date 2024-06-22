@@ -158,7 +158,7 @@
   </html>
   ```
 
-  ```Vue
+  ```VUE
   <!-- MapPicker.vue 组件 -->
   <template>
     <div>
@@ -255,8 +255,10 @@
   <style scoped>
   /* 添加任何附加样式 */
   </style>
+  ```
 
-<!-- Main.vue 组件 -->
+  ```VUE
+  <!-- Main.vue 组件 -->
   <template>
     <div>
       <form @submit.prevent="handleSubmit">
@@ -307,8 +309,8 @@
   ```
 
 2. 小程序端地图结合操作
+- components/MapPicker.vue
 ```VUE
-<!-- components/MapPicker.vue -->
 <template>
   <view>
     <u-input v-model="searchQuery" placeholder="搜索地点" @confirm="searchLocation" />
@@ -407,8 +409,10 @@ function searchLocation() {
 <style scoped>
 /* 添加样式 */
 </style>
+```
 
-<!-- pages/index/index.vue -->
+- pages/index/index.vue
+```VUE
 <template>
   <view class="container">
     <map-picker />
@@ -424,8 +428,8 @@ import MapPicker from '@/components/MapPicker.vue';
 </style>
 ```
 
+- 配置 sdk
 ```JSON
-// 配置 sdk
 {
   "pages": [
     "pages/index/index"
