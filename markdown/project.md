@@ -20,12 +20,10 @@
 4. 配送点管理
 - 关联自制品（盒饭需要人工配送）
 - 配送点具体到楼层（每个配送点间位置隔离，即点 1 选择了 A 栋 1 层，点 2 就无法选择该楼层）
-```JavaScript
-// 配送点间互不干涉实现（具体实现为新添加配送点时需禁用掉已添加过配送点的楼层
-- ![el-tree-disable-node1](../interview-note/image/el-tree-disabled-node-1.png)
-- ![el-tree-disable-node2](../interview-note/image/el-tree-disabled-node-2.png)
-- ![el-tree-disable-node3](../interview-note/image/el-tree-disabled-node-3.png)
-```
+  - 配送点间互不干涉实现（具体实现为新添加配送点时需禁用掉已添加过配送点的楼层
+  - ![el-tree-disable-node1](../interview-note/image/el-tree-disabled-node-1.png)
+  - ![el-tree-disable-node2](../interview-note/image/el-tree-disabled-node-2.png)
+  - ![el-tree-disable-node3](../interview-note/image/el-tree-disabled-node-3.png)
 
 5. 包厢管理
 - 关联食堂 -> 关联食堂类型 -> 关联工作流模版
