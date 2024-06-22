@@ -70,5 +70,374 @@
 - 主要起到历史记录的效果
 
 ### 党务学习
+**会议管理模块 PC 端：**
+1. 会议室管理
+- 会议室表单注意点：
+  - 配套服务可以自定义每个会议室的服务（服务类型、服务人员「会议服务人员角色」、服务内容等）
+  - 会议室绑定坐席设置（坐席形状：环形、圆桌、阶梯；坐席横纵列；坐席配置：屏幕、窗户、空调、门洞等）
+  - 坐席可以预览（通过 pixi.js 实现，pixi.js 是一个 js 图形库，可以实现动画、图形等效果）
+
+2. 会议预约
+- 会议信息
+  - 针对需要预订的会议室选择时间范围（已被预订过的时间段置灰）
+  - 会议提醒：克设定会议开始前某小时某分前提醒（发短信给参会人员的手机号）
+
+- 会议议程
+  - 在会议的时间段内可以安排议程（议程名称、开始结束时间、议程关联人）
+  - 可对议程进行排序、各项议程间时间段互不干涉（校验处理）
+
+- 坐席安排
+  - 左右布局（左边是人员列表、右边是坐席预览），可以鼠标拖动人员将其排在右边坐席图上，坐席图上已被排座的人员右键可以自定义操作（删除、固定等）
+  ```HTML
+  <!-- html 上禁用：@contextmenu.prevent -->
+  <div
+    @click="
+      () => {
+        console.log('here')
+      }
+    "
+    @contextmenu.prevent
+  >
+    {{ 'here' }}
+  </div>
+  ```
+  ```JavaScript
+  // js 上禁用
+  <p id="noContextMenu">这个段落右键菜单已被禁用。</p>
+  <p>但是这个段落没有被禁用。</p>
+
+  noContext = document.getElementById("noContextMenu");
+  noContext.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
+  ```
+
+- 投票管理
+  - 可以对会议创建投票（增删改查）
+
+- 服务管理
+  - 可以给会议安排具体服务
+  - 可根据服务的状态来进行不同的操作（增删改查、评价等）
+
+- 签到信息
+  - 统计参会人员的签到记录
+  - 可以下载二维码让用户通过小程序扫码签到
+  - 可以导出会议签到表进行材料归档
+
+3. 服务记录（对会议服务进行管理）
+- 可查看具体的会议服务详情、取消、接单（仅限角色为会议服务人员）等操作
 
 ### 招商引资小程序
+1. PC 端招商名片
+- 名片表单注意点：
+  - 中文名英文名：英文名需做限制（可以是多个空格分开的大小写字母，前后空格不做限制）
+    - 可支持：张三 - Zhang San、刘铁柱 - Liu Tiezhu、司马相南 - Sima Xiangnan（每个字段间需单个空格区分、前后空格不限制
+    - 搭配 trim()、trimStart()、trimEnd() 使用
+    ```JavaScript
+    // 适配多个词
+    /^[A-Za-z]+(?: [A-Za-z]+)*$/
+
+    // 适配两个词，即名和姓
+    /^[A-Za-z]+ [A-Za-z]+$/
+    ```
+  - 地图选点操作：文本地址输入和地图选点，两者可不匹配但都必填；每次地图选点后同步更新文本地址（后续文本地址修改不限制）；地图选点后再次选点时需回显之前的选点位置；可通过搜索框模糊搜索地点
+  - 腾讯地图 api 文档：https://lbs.qq.com/webApi/javascriptGL/glGuide/glOverview
+  ```HTML
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Picker</title>
+    <!-- 引入腾讯地图 SDK -->
+    <script src="https://map.qq.com/api/gljs?v=1.exp&key=YOUR_TENCENT_MAP_KEY"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+  </html>
+  ```
+
+  ```Vue
+  <!-- MapPicker.vue 组件 -->
+  <template>
+    <div>
+      <!-- 搜索输入框 -->
+      <input v-model="searchQuery" @input="searchPlace" placeholder="Search place" />
+      <!-- 地图容器 -->
+      <div ref="mapContainer" style="width: 100%; height: 400px;"></div>
+      <!-- 确认选点按钮 -->
+      <button @click="confirmSelection">Confirm Selection</button>
+    </div>
+  </template>
+
+  <script setup>
+  import { ref, onMounted, watch } from 'vue';
+
+  // 定义接收的 props
+  const props = defineProps({
+    initialPosition: {
+      type: Object,
+      default: () => ({ lat: 39.9042, lng: 116.4074 }) // 默认位置为北京
+    }
+  });
+
+  // 定义触发的事件
+  const emit = defineEmits(['update:position']);
+
+  // 定义引用的地图容器
+  const mapContainer = ref(null);
+  const searchQuery = ref('');
+  const selectedPosition = ref(props.initialPosition);
+
+  let map;
+  let marker;
+
+  // 组件挂载后初始化地图
+  onMounted(() => {
+    // 初始化地图
+    map = new TMap.Map(mapContainer.value, {
+      center: new TMap.LatLng(selectedPosition.value.lat, selectedPosition.value.lng),
+      zoom: 12
+    });
+
+    // 在地图上添加可拖拽的标记
+    marker = new TMap.MultiMarker({
+      map,
+      geometries: [{
+        position: new TMap.LatLng(selectedPosition.value.lat, selectedPosition.value.lng),
+        properties: {
+          title: "Drag me"
+        }
+      }],
+      draggable: true
+    });
+
+    // 拖动标记结束时更新选中的位置
+    marker.on('dragend', event => {
+      selectedPosition.value = {
+        lat: event.geometry.position.lat,
+        lng: event.geometry.position.lng
+      };
+    });
+  });
+
+  // 搜索地点并在地图上更新位置
+  const searchPlace = () => {
+    if (!searchQuery.value) return;
+
+    const searchService = new TMap.service.Search({
+      complete: result => {
+        if (result.detail.pois.length) {
+          const location = result.detail.pois[0].location;
+          map.setCenter(location);
+          marker.setGeometries([{
+            position: new TMap.LatLng(location.lat, location.lng)
+          }]);
+          selectedPosition.value = { lat: location.lat, lng: location.lng };
+        }
+      }
+    });
+
+    // 执行搜索
+    searchService.search({
+      keyword: searchQuery.value,
+      boundary: 'region(北京,0)'
+    });
+  };
+
+  // 确认选点并发送事件
+  const confirmSelection = () => {
+    emit('update:position', selectedPosition.value);
+  };
+  </script>
+
+  <style scoped>
+  /* 添加任何附加样式 */
+  </style>
+
+<!-- Main.vue 组件 -->
+  <template>
+    <div>
+      <form @submit.prevent="handleSubmit">
+        <div>
+          <!-- 地址输入框 -->
+          <label for="address">Address</label>
+          <input id="address" v-model="form.address" required />
+        </div>
+        <div>
+          <!-- 地图选点组件 -->
+          <label for="map">Map Picker</label>
+          <MapPicker :initialPosition="form.mapPosition" @update:position="updateMapPosition" />
+        </div>
+        <!-- 提交按钮 -->
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </template>
+
+  <script setup>
+  import { ref } from 'vue';
+  import MapPicker from './components/MapPicker.vue';
+
+  // 定义表单数据
+  const form = ref({
+    address: '',
+    mapPosition: { lat: 39.9042, lng: 116.4074 } // 默认位置为北京
+  });
+
+  // 更新地图选点位置
+  const updateMapPosition = position => {
+    form.value.mapPosition = position;
+  };
+
+  // 表单提交处理函数
+  const handleSubmit = () => {
+    if (form.value.address && form.value.mapPosition) {
+      console.log('Form submitted:', form.value);
+    } else {
+      alert('Please fill in all fields.');
+    }
+  };
+  </script>
+
+  <style scoped>
+  /* 添加任何附加样式 */
+  </style>
+  ```
+
+2. 小程序端地图结合操作
+```VUE
+<!-- components/MapPicker.vue -->
+<template>
+  <view>
+    <u-input v-model="searchQuery" placeholder="搜索地点" @confirm="searchLocation" />
+    <u-select v-model="mapType" :options="mapTypes" @change="changeMapType" />
+    <u-select v-model="overlayType" :options="overlayTypes" @change="changeOverlayType" />
+    <map
+      id="map"
+      :longitude="longitude"
+      :latitude="latitude"
+      :scale="scale"
+      :show-location="true"
+      :layers="mapType"
+      :covers="covers"
+      @regionchange="handleRegionChange"
+    />
+  </view>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { uInput, uSelect } from 'uview-plus';
+
+const searchQuery = ref('');
+const mapType = ref('vector');
+const overlayType = ref('block');
+const longitude = ref(113.323);
+const latitude = ref(23.097);
+const scale = ref(16);
+const covers = ref([]);
+
+const mapTypes = [
+  { text: '平面图', value: 'vector' },
+  { text: '卫星图', value: 'satellite' }
+];
+
+const overlayTypes = [
+  { text: '地块', value: 'block' },
+  { text: '楼宇', value: 'building' },
+  { text: '项目', value: 'project' }
+];
+
+onMounted(() => {
+  initMap();
+});
+
+function initMap() {
+  const mapCtx = wx.createMapContext('map');
+  // 初始地图设置等
+}
+
+function changeMapType(value) {
+  mapType.value = value;
+  // 更新地图类型
+}
+
+function changeOverlayType(value) {
+  overlayType.value = value;
+  updateCovers();
+}
+
+function updateCovers() {
+  // 根据 overlayType 更新地图覆盖物
+  covers.value = getOverlayData(overlayType.value);
+}
+
+function getOverlayData(type) {
+  // 模拟返回不同类型的数据
+  switch (type) {
+    case 'block':
+      return [{ id: 1, longitude: 113.323, latitude: 23.097, iconPath: '/resources/block.png' }];
+    case 'building':
+      return [{ id: 2, longitude: 113.323, latitude: 23.097, iconPath: '/resources/building.png' }];
+    case 'project':
+      return [{ id: 3, longitude: 113.323, latitude: 23.097, iconPath: '/resources/project.png' }];
+  }
+}
+
+function handleRegionChange(e) {
+  // 处理地图区域变化事件
+}
+
+function searchLocation() {
+  const plugin = requirePlugin("tencentmap");
+  plugin.search({
+    keyword: searchQuery.value,
+    success: function(res) {
+      const location = res.data[0].location;
+      longitude.value = location.lng;
+      latitude.value = location.lat;
+      // 聚焦到搜索结果
+    }
+  });
+}
+</script>
+
+<style scoped>
+/* 添加样式 */
+</style>
+
+<!-- pages/index/index.vue -->
+<template>
+  <view class="container">
+    <map-picker />
+  </view>
+</template>
+
+<script setup>
+import MapPicker from '@/components/MapPicker.vue';
+</script>
+
+<style scoped>
+/* 添加样式 */
+</style>
+```
+
+```JSON
+// 配置 sdk
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "WeChat"
+  },
+  "plugins": {
+    "tencentmap": {
+      "version": "1.0.0",
+      "provider": "wx76a9a06e5b4e693e"
+    }
+  }
+}
+```
