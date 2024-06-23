@@ -128,7 +128,7 @@ img ~ p {
 
 4. ` ` 后代选择器
 - 可匹配到父元素、祖元素、祖祖元素
-```
+```HTML
 li {
   list-style-type: disc;
 }
@@ -154,6 +154,137 @@ li li {
   </li>
 </ul>
 ```
+
+5. 元素选择器
+```HTML
+  <div>
+    <h1>111</h1>
+    <h2>222</h2>
+    <h3>333</h3>
+  </div>
+```
+```CSS
+h1, h2, h3 {
+  background-color: yellow;
+}
+h1 {
+  border-color: red;
+}
+```
+
+6. 复合选择器
+```CSS
+/* 同时作用两个类 */
+.first.inner-first {
+  color: red;
+}
+```
+
+7. 后代（子、孙等等）选择器
+```CSS
+/* 类 first 的后代 inner-first 类 */
+.first .inner-first {
+  color: red;
+}
+```
+
+8. 属性选择器
+```CSS
+/* 匹配 title 属性 */
+[title] {
+  color: red;
+}
+
+/* 匹配 title 属性的具体值 */
+[title='login'] {
+  color: red;
+}
+
+/* 匹配 title 属性包含具体值 */
+[title*='login'] {
+[title&='login'] {
+[title^='login'] {
+  color: red;
+}
+```
+
+9. 相邻、通用相邻选择器
+- 注意是从某个位置开始选择，该位置之前的不受影响
+```HTML
+<div class="a"></div>
+<div class="b"></div>
+<div class="c"></div>
+```
+```CSS
+/* 相邻选择器 */
+/* 从类开始的下一个 div */
+.a + div {
+  color: red;
+}
+/* 通用相邻选择器 */
+/* 从类 a 开始的所有 div */
+.a ~ div {
+  color: red;
+}
+```
+
+10. 伪类选择器
+```CSS
+button:hover {}
+button:active {}
+input:focus {}
+a:visited {}
+```
+
+11. 伪元素选择器
+```CSS
+/* 字符串的第一个字符 */
+p::first-letter {
+  font-size; 50px;
+}
+
+p::before {}
+p::after {}
+p:first-child {}
+p:nth-child {}
+```
+
+### line-height
+1. line-height 可以小于、等于、大于 font-size
+```CSS
+p {
+  /* 默认是 1，>1 即等比方法、<1 即等比缩小 */
+  line-height: 1;
+}
+```
+
+### null、none
+- null：读音类似 low
+- none：读音类似浪
+
+### display
+- inline：垂直方向的 padding、margin 会没有效果；height 会没有效果
+```CSS
+p {
+  /* 块级 */
+  display: block;
+  /* 行级 */
+  display: inline;
+  /* 行内块 */
+  display: inline-block;
+}
+```
+
+### 盒模型
+1. content -> padding -> border -> margin
+
+2. ![box-model](../interview-note/image/box-model.png)
+
+### vertical-align
+1. ![vertical-align](../interview-note/image/vertical-align.png)
+
+### inherit
+1. 子元素继承自父元素的权重很低，通过 `* {}` 选择器都可以将其改变
 
 ### text-shadow 文字阴影
 - 可多层
