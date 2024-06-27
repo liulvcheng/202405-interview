@@ -29,6 +29,29 @@ export default {
 
 ### router.push()
 1. 会向 history 栈添加一个新的记录，所以，当用户点击浏览器后退按钮时，会回到之前的 URL
+```JavaScript
+// 字符串路径
+router.push('/users/eduardo')
+// 带有路径的对象
+router.push({ path: '/users/eduardo' })
+// 命名的路由，并加上参数，让路由建立 url
+router.push({ name: 'user', params: { username: 'eduardo' } })
+// 带查询参数，结果是 /register?plan=private
+router.push({ path: '/register', query: { plan: 'private' } })
+// 带 hash，结果是 /about#team
+router.push({ path: '/about', hash: '#team' })
+
+const username = 'eduardo'
+// 我们可以手动建立 url，但我们必须自己处理编码
+router.push(`/user/${username}`) // -> /user/eduardo
+// 同样
+router.push({ path: `/user/${username}` }) // -> /user/eduardo
+// 如果可能的话，使用 `name` 和 `params` 从自动 URL 编码中获益
+router.push({ name: 'user', params: { username } }) // -> /user/eduardo
+// `params` 不能与 `path` 一起使用
+// 注意 push path 并且带有 params 的情况
+router.push({ path: '/user', params: { username } }) // -> /user
+```
 
 ### router.replace()
 1. 在导航时不会向 history 添加新记录，正如它的名字所暗示的那样——它取代了当前的条目
@@ -259,7 +282,33 @@ router.afterEach((to, from, failure) => {
 2. 命名路由
 - 给路由配置加上 name 关键字
 
-3. 路由模式
+3. 命名视图
+- 给 router-view 加上 name 关键字
+```JavaScript
+// 在 / 路由下一起展示
+<router-view class="view left-sidebar" name="LeftSidebar" />
+<router-view class="view main-content" />
+<router-view class="view right-sidebar" name="RightSidebar" />
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    {
+      path: '/',
+      // component -> components（注意要加 s
+      components: {
+        default: Home,
+        // LeftSidebar: LeftSidebar 的缩写
+        LeftSidebar,
+        // 它们与 `<router-view>` 上的 `name` 属性匹配
+        RightSidebar,
+      },
+    },
+  ],
+})
+```
+
+4. 路由模式
 - link：https://router.vuejs.org/zh/guide/essentials/history-mode.html
 - hash 模式
   - 兼容性好；不需要特殊配置；含有 `#` 不美观；seo 较差
@@ -304,7 +353,7 @@ const router = createRouter({
 })
 ```
 
-4. beforeEach、beforeResolve（to、from、next），afterEach（to、from、failure）
+5. beforeEach、beforeResolve（to、from、next），afterEach（to、from、failure）
 ```JavaScript
 // beforeEach or beforeResolve 使用
 router.beforeEach((to, from, next) => {
@@ -337,6 +386,90 @@ router.afterEach((to, from, failure) => {
   // 中止或取消的导航
   if (isNavigationFailure(failure, NavigationFailureType.aborted | NavigationFailureType.canceled)) {
     // ...
+  }
+})
+```
+
+6. 获取 url 上的参数
+- 获取路径参数（params）
+```JavaScript
+// /user/:id
+// /user/123
+<template>
+  <div>
+    <h1>User ID: {{ userId }}</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'UserComponent',
+  computed: {
+    userId() {
+      return this.$route.params.id;
+    }
+  }
+};
+</script>
+```
+
+- 获取查询参数（query）
+```JavaScript
+// /search?type=vue
+<template>
+  <div>
+    <h1>Search Query: {{ searchQuery }}</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'SearchComponent',
+  computed: {
+    searchQuery() {
+      return this.$route.query.type;
+    }
+  }
+};
+</script>
+```
+
+7. to.matched
+- 包含了在当前导航过程中匹配到的所有路由记录。每个路由记录对应一个路由配置对象，包括父路由和子路由
+```JavaScript
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    // 这个路由需要认证，请检查是否已登录
+    if (!isLoggedIn()) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      });
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
+});
+```
+
+8. meta（路由元信息）
+```JavaScript
+// 访问 meta 的方式
+// 1. to.meta、from.meta
+// 2. to.matched.map((item) => console.log(item.meat))
+router.beforeEach((to, from) => {
+  // 而不是去检查每条路由记录
+  // to.matched.some(record => record.meta.requiresAuth)
+  if (to.meta.requiresAuth && !auth.isLoggedIn()) {
+    // 此路由需要授权，请检查是否已登录
+    // 如果没有，则重定向到登录页面
+    return {
+      path: '/login',
+      // 保存我们所在的位置，以便以后再来
+      query: { redirect: to.fullPath },
+    }
   }
 })
 ```

@@ -78,7 +78,7 @@ console.log(greet.call(person2)); // 你好，我是 Bob
 
 ### hasOwnProperty
 1. in（直接 or 间接属性） and for...in（作用于直接属性）
-```
+```JavaScript
 const example = {};
 example.prop = "exists";
 
@@ -195,7 +195,7 @@ console.log('here', Array.prototype.sort.call(obj)) // { 1: '1', 2: '2', 3: '3' 
 - link：Object.assign：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
 
 - array to object：{...arr}、Object.assign({}, arr)
-- object to array：Object.keys、Object.valuse、Object.entries
+- object to array：Object.keys、Object.values、Object.entries
 - object 合并：Object.assign({}, obj1, obj2, ...)
 
 5. 幂运算
@@ -323,7 +323,7 @@ console.log("同步任务 4");
 
 10. 变量提升
 - 'var 声明的变量会被提升到作用域的顶部，并初始化为 undefined，因此在变量声明之前可以访问，但值为 undefined'
-- 'let 和 const 声明的变量会被提升到作用域的顶部，但不会初始化，在声明之前访问这些变量会导致 ReferenceError（称为暂时性死区）。此外，const 声明的变量必须在声明时初始化'
+- 'let 和 const 声明的变量会被提升到作用域的顶部，但不会初始化（不会初始化表示这里对变量进行操作会报错），在初始化之前访问这些变量会导致 ReferenceError（称为暂时性死区）。此外，const 声明的变量必须在声明时初始化'
 
 11. **Promise**
 - Promise.prototype.catch()：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch
@@ -508,13 +508,12 @@ let { foo: baz } = { foo: 'aaa', bar: 'bbb' }; 等价于 let { foo: foo, bar: ba
 
 25. String.raw（输出原始字符串
 - link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/String/raw
-```
-<!-- 注意下述两者的输出是不一样的 -->
+```JavaScript
+// 注意下述两者的输出是不一样的
 console.log(String.raw`Line1\tLine2`) // Line1\tLine2
 
 const path = `Line1\tLine2` // \t 被转译
 console.log(String.raw`${path}`) // Line1 Line2
-
 ```
 
 26. 字符串补全
@@ -969,6 +968,58 @@ console.log(classLiu.__proto__, classLiu.constructor) // { info: 'info' }, [clas
 const obj1 = {}
 const obj2 = new Object()
 console.log(obj1.constructor === obj2.constructor) // true
+```
+
+43. 迭代和递归的区别
+- 迭代（如 for、while 等循环）
+```JavaScript
+function sum1(n) {
+  let result = 0
+  for (let i = 0; i <= n; i++) {
+    result += i
+  }
+  return result
+}
+```
+
+- 递归（需要有退出条件；容易造成栈溢出、性能问题）
+- 执行解释（可以理解为进栈出栈操作）：![递归调用解释](../interview-note/image/递归调用解释.png)
+```JavaScript
+// 执行过程
+// sum2(5)
+//   => 5 + sum2(4)
+//   => 5 + (4 + sum2(3))
+//   => 5 + (4 + (3 + sum2(2)))
+//   => 5 + (4 + (3 + (2 + sum2(1))))
+//   => 5 + (4 + (3 + (2 + 1)))
+//   => 15
+
+function sum2(n) {
+  if (n === 1) {
+    return 1
+  }
+  return n + sum2(n - 1)
+}
+```
+
+- 尾递归（需要退出条件；相比递归不需要额外的临时栈空间「变相减少了栈溢出的可能，从而减少内存消耗」）
+- 执行解释：![尾递归调用解释](../interview-note/image/尾递归调用解释.png)
+```JavaScript
+// 执行过程
+// sum3(5, 0)
+//   => sum3(4, 5)
+//   => sum3(3, 9)
+//   => sum3(2, 12)
+//   => sum3(1, 14)
+//   => sum3(0, 15)
+//   => 15
+
+function sum3(n, result = 1) {
+  if (n === 1) {
+    return result
+  }
+  return sum3(n - 1, result + n)
+}
 ```
 
 ### answer

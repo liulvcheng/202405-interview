@@ -1913,7 +1913,7 @@ const objOne = {
   age: 18,
   sex: 'male'
 } as const
-objOne.name = 'liu'
+objOne.name = 'liu' // name is readonly
 
 // Object.freeze 可将对象冻结（浅层冻结）
 const objTwo = Object.freeze({
@@ -1931,6 +1931,49 @@ objTwo.info.paramsOne = 11
 // Array 是特殊的 Object
 const arrOne = Object.freeze([1, 2, 3, { key: 4 }])
 arrOne[0] = 11 // error
+
+// 循环 freeze 对象
+// 递归实现（没有退出条件，容易造成栈溢出、性能问题
+var constantize = (obj) => {
+  Object.freeze(obj);
+  Object.keys(obj).forEach((key, i) => {
+    if ( typeof obj[key] === 'object' ) {
+      constantize( obj[key] );
+    }
+  });
+};
+
+// 迭代实现
+var constantize = (obj) => {
+  let stack = [obj];
+
+  while (stack.length) {
+    let currentObj = stack.pop();
+    Object.freeze(currentObj);
+
+    Object.keys(currentObj).forEach(key => {
+      if (typeof currentObj[key] === 'object' && currentObj[key] !== null) {
+        stack.push(currentObj[key]);
+      }
+    });
+  }
+};
+// 示例
+let myObj = {
+  a: 1,
+  b: {
+    c: {
+      d: 2,
+      e: {
+        f: 3
+      }
+    }
+  }
+};
+constantize(myObj);
+myObj.a = 10; // 无效，myObj.a 仍然是 1
+myObj.b.c.d = 20; // 无效，myObj.b.c.d 仍然是 2
+console.log(myObj); // { a: 1, b: { c: { d: 2, e: { f: 3 } } } }
 ```
 
 8. Object.seal()

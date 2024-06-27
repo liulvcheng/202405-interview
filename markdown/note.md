@@ -259,7 +259,7 @@ input.removeEventListener("click", handler);
 - event.type
 - event.currentTarget（注意箭头函数 eventTarget 的区分
   - 普通函数 this 会指向绑定事件的元素
-  - 箭头函数没有自己的 this 绑定，它会从定义它的上下文（即其外部作用域）中继承 this。这意味着 this 在箭头函数中不会指向事件绑定的元素，而是指向箭头函数定义时的上下文
+  - 箭头函数没有自己的 this 绑定，它会从定义它的上下文（即其外部作用域）中继承 this。这意味着 this 在箭头函数中不会指向事件绑定的元素，而是指向箭头函数定义时的上下文（因此在 html 对应的事件处理函数中最好不要使用箭头函数）
 ```HTML
 <!-- 普通函数 -->
 <!DOCTYPE html>
@@ -720,6 +720,56 @@ uni.chooseLocation({
     console.log('经度：' + res.longitude)
   },
 })
+```
+
+### 实现复制文本功能
+1. link（blog）：https://liruifengv.com/posts/copy-text/
+
+2. link（张鑫旭）：https://www.zhangxinxu.com/wordpress/2021/10/js-copy-paste-clipboard/
+
+3. 例子
+```JavaScript
+var text = '被复制的内容，啦啦啦~';
+if (navigator.clipboard) {
+    // clipboard api 复制
+    navigator.clipboard.writeText(text);
+} else {
+    var textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+    // 隐藏此输入框
+    textarea.style.position = 'fixed';
+    textarea.style.clip = 'rect(0 0 0 0)';
+    textarea.style.top = '10px';
+    // 赋值
+    textarea.value = text;
+    // 选中
+    textarea.select();
+    // 复制
+    document.execCommand('copy', true);
+    // 移除输入框
+    document.body.removeChild(textarea);
+}
+
+const copyText = async val => {
+  // 判断当前浏览器是否支持 clipboard api 且有权限
+  if (navigator.clipboard && navigator.permissions) {
+    await navigator.clipboard.writeText(val);
+  } else {
+    // execCommand api 在逐步废弃
+    const textArea = document.createElement("textArea");
+    textArea.value = val;
+    textArea.style.width = 0;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999px";
+    textArea.style.top = "10px";
+    textArea.setAttribute("readonly", "readonly");
+    document.body.appendChild(textArea);
+
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+  }
+};
 ```
 
 
