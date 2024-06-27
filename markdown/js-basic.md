@@ -170,7 +170,19 @@ link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_
 - link：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
   - splice 的示例可以多看看：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/splice#:~:text=%E6%98%AF%E4%B8%8D%E5%8F%AF%E5%8F%98%E7%9A%84%E3%80%82-,%E7%A4%BA%E4%BE%8B,-%E5%9C%A8%E7%B4%A2%E5%BC%95%202
 - link: https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/slice
-- slice 不会改变原数组，slice 会改变（可用 toSpliced 替代，类似于 sort 和 toSorted）
+- slice 不会改变原数组，splice 会改变（可用 toSpliced 替代，类似于 sort 和 toSorted）
+```JavaScript
+let arr1 = [1, 2, 3]
+let arr2 = [1, 2, 3]
+
+// 参数为空时两者返回的情况不一样
+console.log('1', arr1.splice()) // []
+console.log('2', arr2.slice()) // [1, 2, 3]
+
+// 参数不为空
+console.log('3', arr1.splice(0, 1)) // [1]
+console.log('4', arr2.slice(0, 1)) // [1]
+```
 
 3. sort、compareFunction
 ```

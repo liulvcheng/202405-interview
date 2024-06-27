@@ -1347,3 +1347,46 @@ Promise.try(() => database.users.get({id: userId}))
   .then(...)
   .catch(...)
 ```
+
+### 26 - 编程风格
+1. 使用 let、const 代替 var（全局作用域，变量提升）
+
+2. 变量赋值时优先使用解构赋值
+```JavaScript
+const arr = [1, 2, 3, 4];
+// bad
+const first = arr[0];
+const second = arr[1];
+// good
+const [first, second] = arr;
+
+// bad
+function getFullName(user) {
+  const firstName = user.firstName;
+  const lastName = user.lastName;
+}
+// good
+function getFullName(obj) {
+  const { firstName, lastName } = obj;
+}
+// best
+function getFullName({ firstName, lastName }) {}
+```
+
+3. 数组
+```JavaScript
+// 使用扩展运算符拷贝数组
+// bad
+const len = items.length;
+const itemsCopy = [];
+let i;
+for (i = 0; i < len; i++) {
+  itemsCopy[i] = items[i];
+}
+// good
+const itemsCopy = [...items];
+
+// Array.from 将类数组转为数组
+const foo = document.querySelectorAll('.foo');
+const nodes = Array.from(foo);
+```

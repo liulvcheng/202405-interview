@@ -772,4 +772,13 @@ const copyText = async val => {
 };
 ```
 
+### react 中 useEffect 对空引用类型的引用导致的 bug
+1. link：https://www.xiaohongshu.com/explore/66600a31000000000e030ab6?xsec_token=ABMOz-1HPV8ulekXYe45cOjnNI0JVOA3StwjhjQQggSJM=&xsec_source=pc_user
+
+2. image
+![bug](../interview-note/image/2024067-react-useEffect-bug.png)
+
+3. 给某个字段设定了 {} 的默认值，而每次给该字段设置 {} 时都会创建一部分内存空间用来存储，因此 useEffect 引用到该字段时就会每次都会有副作用（即 effect）
+
+
 
