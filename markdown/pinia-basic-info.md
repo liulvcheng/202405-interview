@@ -395,6 +395,7 @@ onMounted(() => {
 1. array function
 - map、forEach
   - map、forEach 无法通过诸如 return、break 等方法推出循环（try - catch 可以，但过于 hacker）
+  - map、forEach 中使用 break 会报错（SyntaxError 语法错误）
   - 用 for...of 代替两者（当需要提前退出的情况，break 即可提前退出）
 
 - some（返回 true or false、箭头函数、有一项满足即可

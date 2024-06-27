@@ -944,8 +944,17 @@ const array = [...arguments]
 
 42. 原型链
 - prototype、__proto__
-- 实例.__proto__ === 父类.prototype
+  - 实例.__proto__ === 父类.prototype
 - __proto__ 指向该对象的原型；constructor 指向该对象的构造函数
+
+- prototype
+  - 只有函数对象（包括普通函数、构造函数和类）才会有 prototype 属性。其他类型的对象（如普通对象、数组等）不会有 prototype 属性
+  - 普通函数：每个普通函数都有 prototype 属性
+	- 构造函数：构造函数的 prototype 属性用于定义由该构造函数创建的实例的原型
+	- 类 (ES6 Classes)：类的 prototype 属性用于定义由该类创建的实例的原型
+	- 内置对象构造函数：JavaScript 的内置对象构造函数（如 Array、Function 等）都有 prototype 属性
+- 对象（实例化对象）的 __proto__ 指向父类构造函数的 prototype
+- 对象（实例化对象）的 constructor 父类的构造函数
 
 - ![prototype1](../interview-note/image/prototype1.png)
 - ![prototype2](../interview-note/image/prototype2.png)
