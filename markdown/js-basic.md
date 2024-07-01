@@ -587,10 +587,10 @@ console.log(Object.getOwnPropertySymbols(obj)) // [ Symbol(001), Symbol(002), Sy
 29. import and required
 - link（思否讨论）：https://segmentfault.com/q/1010000043526848
 - import：编译时加载（效率高、方便排查错误）；import 的内容只可读（本质是 import 引用；import 对象时改变对象的属性是可以的「不建议这样操作」）
-- export：可对外输出的东西（函数、类、变量：let、const、var）
+- export：可对外输出的东西（函数「函数声明、函数表达式」、类、变量「let、const、var」）
 - required：运行时加载（可动态引入）；required 的内容可读可写（本质是 required 值的拷贝；多个同模块引用隔离）
 ```JavaScript
-<!-- export default -->
+// export default
 // 第一组
 export default function crc32() { // 输出
   // ...
@@ -604,7 +604,7 @@ export function crc32() { // 输出
 import { crc32 } from 'crc32'; // 输入
 
 
-<!-- 跨模块常量 -->
+// 跨模块常量
 // constants.js 模块
 export const A = 1;
 export const B = 3;
@@ -620,7 +620,7 @@ import { A, B } from './constants';
 console.log(A); // 1
 console.log(B); // 3
 
-<!-- ES2020 中的 import() 函数实现运行时加载 -->
+// ES2020 中的 import() 函数实现运行时加载
 link：https://es6.ruanyifeng.com/#:~:text=constants/index%27%3B-,import(),-%C2%A7%20%E2%87%A7
 
 可通过 async-await 来动态引入 import 中的内容
@@ -1024,6 +1024,7 @@ function sum2(n) {
 ```
 
 - 尾递归（需要退出条件；相比递归不需要额外的临时栈空间「变相减少了栈溢出的可能，从而减少内存消耗」）
+- '尾递归在支持尾递归优化的编译器或解释器中，通过复用当前的栈帧来避免栈的增长，从而实现常数空间复杂度；具体实现来源于编译器或解释器的优化技术'
 - 执行解释：![尾递归调用解释](../interview-note/image/尾递归调用解释.png)
 ```JavaScript
 // 执行过程
@@ -1114,7 +1115,7 @@ console.log(objTwo); // { name: 'da' }
 ```
 
 5. parseInt
-```
+```JavaScript
 ['1', '2', '3'].map(parseInt)
 
 等价于
@@ -1125,6 +1126,15 @@ console.log(objTwo); // { name: 'da' }
 parseInt(1, 0) // 1
 parseInt(2, 1) // NaN
 parseInt(3, 2) // NaN
+
+// parseInt 二进制时
+console.log(parseInt('0', 2)) // 0
+console.log(parseInt('1', 2)) // 1
+console.log(parseInt('10', 2)) // 2
+console.log(parseInt('101', 2)) // 5
+console.log(parseInt('1101', 2)) // 13
+console.log(parseInt('2', 2)) // NaN
+console.log(parseInt('123', 2)) // 1 (只解析第一个有效字符 '1')
 ```
 
 6. String.raw

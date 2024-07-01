@@ -399,6 +399,24 @@ var flat = function (arr, n) {
   flatFunc(arr, n)
   return result
 };
+
+// forEach 实现（不需要指定 depth 的情况下去掉 depth 所在的逻辑就行
+function flatten(arr, depth = 1) {
+  if (arr.length === 0) {
+    return arr
+  }
+
+  let result = []
+  arr.forEach((item) => {
+    if (Array.isArray(item) && depth > 0) {
+      result.push(...flatten(item, depth - 1))
+    } else {
+      result.push(item)
+    }
+  })
+  return result
+}
+console.log(flatten([1, [2, [3, [4]]]], 1))
 ```
 
 ### 实现 Array.prototype.flat()

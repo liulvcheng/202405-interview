@@ -1348,6 +1348,217 @@ Promise.try(() => database.users.get({id: userId}))
   .catch(...)
 ```
 
+### 24 - Moudle 的语法
+1. 建议的导出 export 方式
+```JavaScript
+var firstName = 'Michael';
+var lastName = 'Jackson';
+var year = 1958;
+export { firstName, lastName, year };
+```
+
+2. export 重命名（as）
+```JavaScript
+function v1() { ... }
+function v2() { ... }
+
+export {
+  v1 as streamV1,
+  // 通过 as 使得函数 v2 导出了两次
+  v2 as streamV2,
+  v2 as streamLatestVersion
+};
+
+// import as 重命名
+import { lastName as surname1, lastName as surname2 } from './profile.js'
+```
+
+3. export 一个变量的正确方式
+```JavaScript
+// 写法一
+export var m = 1;
+
+// 写法二
+var m = 1;
+export { m };
+
+// 写法三
+var n = 1;
+export { n as m };
+```
+
+4. export {} 和 export default 混合使用
+```JavaScript
+// file: mixedExports.js
+const num1 = 1;
+const num2 = 2;
+const add = (a, b) => a + b;
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+  greet() {
+    return `Hello, my name is ${this.name}`;
+  }
+}
+// export default
+export default add;
+// export {}
+export { num1, num2, Person };
+
+// file: main.js
+// add 对应 default 导出；{ ... } 解构赋值对应 {} 导出
+import add, { num1, num2, Person } from './mixedExports';
+
+console.log(num1); // 1
+console.log(num2); // 2
+console.log(add(num1, num2)); // 3
+
+const john = new Person('John');
+console.log(john.greet()); // Hello, my name is John
+
+// export default 匿名函数
+// 导出匿名函数
+export default function () {
+  console.log('foo');
+}
+// 可对该匿名函数取任意名字
+import customName from './export-default';
+customName(); // 'foo'
+```
+
+5. import、export 使用时需要注意块级作用域和判断条件的情况
+```JavaScript
+function foo() {
+  export default 'bar' // SyntaxError
+  import myBar // SyntaxError（注意此处 myBar 可以使用任何名称
+}
+foo()
+
+// 报错
+if (x === 1) {
+  import { foo } from 'module1';
+} else {
+  import { foo } from 'module2';
+}
+```
+
+6. 改写 import 的内容
+- import 引入的内容都是只读的，本质上是原始定义的引用（原始定义为引用类型的话会有问题）
+```JavaScript
+import {a} from './xxx.js'
+a = {}; // Syntax Error : 'a' is read-only;
+
+import {a} from './xxx.js'
+a.foo = 'hello'; // 合法操作
+```
+
+7. import 的提升
+- 原因是 import 是编译时运行，而 foo() 实际是在运行时运行的
+```JavaScript
+foo();
+import { foo } from 'my_module';
+```
+
+8. 需要定义的常用变量很多时结合 import 和 export
+```JavaScript
+// db.js、user.js 在不同的 js 文件中定义需要导出的常用变量
+// constants/db.js
+export const db = {
+  url: 'http://my.couchdbserver.local:5984',
+  admin_username: 'admin',
+  admin_password: 'admin password'
+};
+// constants/user.js
+export const users = ['root', 'admin', 'staff', 'ceo', 'chief', 'moderator'];
+
+// index.js 在 index 中统一将 constant 中的 js 文件一并导出
+// constants/index.js
+export {db} from './db';
+export {users} from './users';
+
+// script.js
+// 在其它文件中可以直接引用
+import {db, users} from './constants/index';
+```
+
+9. import() 可以实现动态引用；返回值是 Promise
+```JavaScript
+async function renderWidget() {
+  const container = document.getElementById('widget');
+  if (container !== null) {
+    // 等同于
+    // import("./widget").then(widget => {
+    //   widget.render(container);
+    // });
+    const widget = await import('./widget.js');
+    widget.render(container);
+  }
+}
+
+renderWidget();
+
+// import() 的适用场景
+// 01 - 按需加载
+button.addEventListener('click', event => {
+  import('./dialogBox.js')
+  .then(dialogBox => {
+    dialogBox.open();
+  })
+  .catch(error => {
+    /* Error handling */
+  })
+});
+
+// 02 - 条件加载（如通过 if 等判断条件来加载）
+if (condition) {
+  import('moduleA').then(...);
+} else {
+  import('moduleB').then(...);
+}
+
+// 03 - 动态的模块路径
+import(f())
+.then(...);
+
+const main = document.querySelector('main');
+// import 的东西是动态的
+import(`./section-modules/${someVariable}.js`)
+  .then(module => {
+    module.loadPageInto(main);
+  })
+  .catch(err => {
+    main.textContent = err.message;
+  });
+```
+
+10. import() 同时加载多个模块
+```JavaScript
+Promise.all([
+  import('./module1.js'),
+  import('./module2.js'),
+  import('./module3.js'),
+])
+.then(([module1, module2, module3]) => {
+   ···
+});
+```
+
+11. import() 同 async - await 结合
+```JavaScript
+async function main() {
+  const myModule = await import('./myModule.js');
+  const {export1, export2} = await import('./myModule.js');
+  const [module1, module2, module3] =
+    await Promise.all([
+      import('./module1.js'),
+      import('./module2.js'),
+      import('./module3.js'),
+    ]);
+}
+main();
+```
+
 ### 26 - 编程风格
 1. 使用 let、const 代替 var（全局作用域，变量提升）
 
@@ -1389,4 +1600,77 @@ const itemsCopy = [...items];
 // Array.from 将类数组转为数组
 const foo = document.querySelectorAll('.foo');
 const nodes = Array.from(foo);
+```
+
+4. 对象静态化
+```JavaScript
+// 如果需要对对象添加新的属性，最好不要直接通过 . or [] 操作符；可以使用 Object.assign 这样的方法来实现
+const a = {};
+Object.assign(a, { x: 3 });
+```
+
+5. 配置项应该整合起来作为整体来使用
+```JavaScript
+// bad
+function divide(a, b, option = false ) {
+}
+
+// good
+function divide(a, b, { option = false } = {}) {
+}
+```
+
+6. 建议使用默认参数
+```JavaScript
+// bad
+function handleThings(opts) {
+  opts = opts || {};
+}
+
+// good
+function handleThings(opts = {}) {
+  // ...
+}
+```
+
+7. import、export（导出属性和方法）
+```JavaScript
+// export 属性（camel case 命名法
+function makeStyleGuide() {
+}
+export default makeStyleGuide;
+
+// export 方法（首字母大写命名法
+const StyleGuide = {
+  es6: {
+  }
+};
+export default StyleGuide;
+```
+
+### Others
+1. for...of 可以用来遍历可迭代的数据类型（Array、Map、Set、NodeList、字符串等）
+```JavaScript
+// Array
+for (let item of [1, 2, 3]) {
+  console.log(item)
+}
+
+// Map
+for (let item of new Map([
+  [1, 1],
+  [2, 2],
+])) {
+  console.log(item)
+}
+
+// Set
+for (let item of new Set([1, 2, 3])) {
+  console.log(item)
+}
+
+// String
+for (let item of '123') {
+  console.log(item)
+}
 ```
