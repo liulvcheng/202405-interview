@@ -2,9 +2,9 @@
 - link：https://component-party.lainbo.com/#%E5%93%8D%E5%BA%94%E5%BC%8F
 
 ### provide - inject
-```
-<!-- vue3 -->
-<!-- App.vue -->
+```JavaScript
+// vue3
+// App.vue
 <script setup>
 import { ref, provide } from "vue";
 import UserProfile from "./UserProfile.vue";
@@ -27,7 +27,7 @@ provide("user", { user, updateUsername });
   <UserProfile />
 </template>
 
-<!-- UserProfile.vue -->
+// UserProfile.vue
 <script setup>
 import { inject } from "vue";
 const { user, updateUsername } = inject("user");
@@ -45,8 +45,8 @@ const { user, updateUsername } = inject("user");
 </template>
 
 
-<!-- Vue2 -->
-<!-- App.vue -->
+// Vue2
+// App.vue
 <script>
 import UserProfile from "./UserProfile.vue";
 
@@ -83,7 +83,7 @@ export default {
   </div>
 </template>
 
-<!-- UserProfile.vue -->
+// UserProfile.vue
 <script>
 export default {
   inject: ["user"],
@@ -103,8 +103,9 @@ export default {
 ```
 
 ### CSS 中的 v-bind
-```
-<!-- Vue2 -->
+1. CSS 中 v-bind 支持的数据类型（props、computed、ref、reactive）
+```JavaScript
+// Vue2 中 v-bind 不支持（需要使用第三方库「如 vue-loader」来支持实现
 <template>
   <div class="text">hello</div>
 </template>
@@ -125,11 +126,11 @@ export default {
 }
 </style>
 
-<!-- Vue3 -->
+// Vue3
 <script setup>
 import { ref } from 'vue'
 const theme = ref({
-    color: 'red',
+  color: 'red',
 })
 </script>
 
