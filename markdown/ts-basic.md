@@ -1979,3 +1979,6 @@ console.log(myObj); // { a: 1, b: { c: { d: 2, e: { f: 3 } } } }
 8. Object.seal()
 - link（可以简单理解为密封一个对象）：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/seal
 - Object.isSealed()
+
+9. tsc 指定编译版本
+- tsc --target es2015 hello.ts
