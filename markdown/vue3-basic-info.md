@@ -58,6 +58,211 @@ const classObj = computed(() => ({
 ### 双向绑定、v-model
 1. v-model.trim
 
+2. true-value、false-value 的设置
+- 适用于 v-model 绑定的值在两个状态间选择的情况
+```JavaScript
+// checkbox
+<input
+  type="checkbox"
+  v-model="toggle"
+  true-value="yes"
+  false-value="no" />
+
+// radio（只存在两个可选的情况）
+<input
+  type="radio"
+  v-model="selectedOption"
+  :true-value="'option1'"
+  :false-value="'option2'"
+  name="option"
+/>
+```
+
+3. 组件上的 v-model
+```JavaScript
+// 01 - v-model 上的参数
+// 01 - App.vue
+<script>
+import MyComponent from './MyComponent.vue'
+
+export default {
+  components: { MyComponent },
+  data() {
+    return {
+      // v-model 默认绑定的值（即在父组件默认设置的值双向绑定了子组件的 title 展示）
+      bookTitle: 'v-model argument example'
+    }
+  }
+}
+</script>
+
+<template>
+  <h1>{{ bookTitle }}</h1>
+  <MyComponent v-model:title="bookTitle" />
+</template>
+
+// 01 - MyComponent.vue
+<script>
+export default {
+  props: ['title'],
+  emits: ['update:title']
+}
+</script>
+
+<template>
+  // 子组件 emit update:title 来更新绑定的值（更新时父子组件对应的 title 会同步更新）
+  <input
+    type="text"
+    :value="title"
+    @input="$emit('update:title', $event.target.value)"
+  />
+</template>
+
+// 02 - 多个 v-model 绑定
+// 02 - 父组件
+<UserName
+  v-model:first-name="first"
+  v-model:last-name="last"
+/>
+
+// 02 - 子组件
+<script setup>
+const firstName = defineModel('firstName')
+const lastName = defineModel('lastName')
+</script>
+
+<template>
+  // 子组件 firstName、lastName 的改变父子组件都会自动更新
+  <input type="text" v-model="firstName" />
+  <input type="text" v-model="lastName" />
+</template>
+```
+
+4. v-model 的拆分
+```JavaScript
+<script setup>
+const props = defineProps(['modelValue'])
+const emit = defineEmits(['update:modelValue'])
+</script>
+
+<template>
+  // 下述 emit 事件在父组件中不需要手动监听，会自动更新
+  <input
+    :value="props.modelValue"
+    @input="emit('update:modelValue', $event.target.value)"
+  />
+</template>
+
+// 01 - 父组件 v-model 绑定了 v-model:paramFirst 和 v-model:paramSecond
+// 02 - 子组件可以自动更新 defineModel 的方式
+// 03 - 子组件也可以通过 defineProps 的方式接收，然后通过 defineEmits 的方式触发 emit('update:paramFirst', '具体值 first') 和 ('update:paramSecond', '具体值 second') 的方式来同步更新
+```
+
+5. defineModel 的使用
+```JavaScript
+const title = defineModel('title', {
+  required: true,
+  default: 'yo',
+  // 校验
+  validator: value => typeof value === 'string' && value.length > 0,
+  // 数据类型
+  type: String,
+  // 将传入的值在子组件使用时进行处理（此处为去掉前后空格）
+  coerce: value => value.trim()
+});
+```
+
+6. v-model 的自定义修饰符
+```JavaScript
+// 父组件
+<template>
+  // capitalize 自定义修饰符
+  <MyComponent v-model.capitalize="parentText" />
+  <p>Parent Text: {{ parentText }}</p>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import MyComponent from './MyComponent.vue';
+
+const parentText = ref('example');
+</script>
+
+// 子组件
+<template>
+  <div>
+    <input type="text" v-model="modelValue" />
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, defineProps, defineEmits } from 'vue';
+
+// 定义接收的属性和事件
+const props = defineProps(['modelValue']);
+const emit = defineEmits(['update:modelValue']);
+
+// 创建内部的 model 和修饰符
+const model = ref(props.modelValue);
+
+// 初始化时对传入的数据进行转换
+if (modifiers.capitalize) {
+  model.value = model.value.charAt(0).toUpperCase() + model.value.slice(1);
+}
+
+// 监听 model 的变化，并同步更新父组件的数据
+watch(model, (newValue) => {
+  emit('update:modelValue', newValue);
+});
+
+// 监听传入的 modelValue 的变化，并同步更新内部的 model
+watch(() => props.modelValue, (newValue) => {
+  model.value = newValue;
+});
+</script>
+
+// modifiers 能拿到所有的自定义修饰符
+<script setup>
+const [model, modifiers] = defineModel({
+  set(value) {
+    if (modifiers.capitalize) {
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    }
+    return value
+  }
+})
+</script>
+<template>
+  <input type="text" v-model="model" />
+</template>
+```
+
+7. 多个 v-model 添加修饰符
+```JavaScript
+<UserName
+  v-model:first-name.capitalize="first"
+  v-model:last-name.uppercase="last"
+/>
+
+<script setup>
+const [firstName, firstNameModifiers] = defineModel('firstName', {
+  set(value) {
+    return firstNameModifiers.capitalize
+      ? value.charAt(0).toUpperCase() + value.slice(1)
+      : value;
+  }
+});
+
+const [lastName, lastNameModifiers] = defineModel('lastName', {
+  set(value) {
+    return lastNameModifiers.uppercase ? value.toUpperCase() : value;
+  }
+});
+console.log(firstNameModifiers) //  { capitalize: true }
+console.log(lastNameModifiers) // { uppercase: true }
+</script>
+```
+
 ### life cycle
 - mounted / onMounted
 
@@ -182,6 +387,165 @@ function submitForm(email, password) {
 
 3. 引入 elementPlus
 - npm install element-plus --save-dev
+
+### defineExpose
+1. 父组件如何拿到子组件 expose 的数据
+```JavaScript
+<template>
+  <div>
+    <ChildComponent ref="childRef"></ChildComponent>
+    <button @click="accessChildData">Access Child Data</button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import ChildComponent from './ChildComponent.vue';
+
+const childRef = ref(null);
+
+// 通过 ref 的方式
+const accessChildData = () => {
+  if (childRef.value) {
+    console.log(childRef.value.a); // 1
+    console.log(childRef.value.b.value); // 2
+  }
+};
+</script>
+```
+
+2. defineExpose 写在哪里
+```JavaScript
+<template>
+  <div>{{ b }}</div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+// 定义要暴露的数据
+const a = 1;
+const b = ref(2);
+
+// 使用 defineExpose 暴露数据
+// 写在所有需要暴露出去的变量、方法前
+defineExpose({
+  a,
+  b
+});
+</script>
+```
+
+3. expose 变量、computed、function
+```JavaScript
+// 父组件
+<template>
+  <div>
+    <ChildComponent ref="childRef"></ChildComponent>
+    <button @click="callChildMethod">Call Child Method</button>
+    <p>Computed Property from Child: {{ childComputed }}</p>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import ChildComponent from './ChildComponent.vue';
+
+const childRef = ref(null);
+
+const callChildMethod = () => {
+  if (childRef.value) {
+    childRef.value.childMethod();
+  }
+};
+
+const childComputed = computed(() => {
+  return childRef.value ? childRef.value.computedValue : '';
+});
+</script>
+
+// 子组件
+<template>
+  <div>{{ b }}</div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+
+const a = 1;
+const b = ref(2);
+
+const childMethod = () => {
+  console.log('Child method called');
+};
+
+const computedValue = computed(() => {
+  return `Computed: ${b.value}`;
+});
+
+defineExpose({
+  a,
+  b,
+  childMethod,
+  computedValue
+});
+</script>
+```
+
+4. defineExpose 适用于不需要触发事件就可以将内部属性（数据、方法等）暴露给外部适用的情况
+```JavaScript
+// 子组件暴露表单验证方法
+// 父组件
+<template>
+  <div>
+    <FormComponent ref="formRef"></FormComponent>
+    <button @click="submitForm">Submit</button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import FormComponent from './FormComponent.vue';
+
+const formRef = ref(null);
+
+const submitForm = () => {
+  if (formRef.value) {
+    const isValid = formRef.value.validateForm();
+    if (isValid) {
+      console.log('Form is valid, submit the form');
+    } else {
+      console.log('Form is invalid, show errors');
+    }
+  }
+};
+</script>
+
+// 子组件
+<template>
+  <form>
+    <input v-model="formData.name" placeholder="Name">
+    <input v-model="formData.email" placeholder="Email">
+  </form>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+const formData = ref({
+  name: '',
+  email: ''
+});
+
+const validateForm = () => {
+  return formData.value.name && formData.value.email;
+};
+
+defineExpose({
+  validateForm
+});
+</script>
+```
 
 ### others
 1. 根据传入项快速删除数据中的某一项
