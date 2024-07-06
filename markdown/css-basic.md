@@ -437,3 +437,30 @@ input[type="text"], input[type="password"] {
   border: 1px solid black;
 }
 ```
+
+8. 设置浏览器根元素的字体大小
+- 浏览器根元素默认 font-size 为 16px
+```JavaScript
+// 例如 innerWidth 为 1000px，设计图的 presetWidth 为 2000px，通过下述方式可以设置根元素 font-size 从 16px 变为 1/2 rem 即 8px
+document.documentElement.style.fontSize = window.innerWidth / presetWidth + 'rem'
+
+// 通过媒体查询根据屏幕大小设置 font-size
+/* 屏幕宽度小于 768px 时 */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px; /* 修改根元素的字体大小为 14px */
+  }
+}
+/* 屏幕宽度大于等于 768px 且小于 1024px 时 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px; /* 修改根元素的字体大小为 15px */
+  }
+}
+/* 屏幕宽度大于等于 1024px 时 */
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px; /* 修改根元素的字体大小为 16px */
+  }
+}
+```

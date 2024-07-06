@@ -1020,6 +1020,340 @@ type FirstArrayItemType<T extends any[]> = T extends [infer P extends string, ..
   : never;
 ```
 
+### 15 - 函数类型：协变和逆变
+1. 函数类型需要关注参数和返回值
+```TypeScript
+// 有下述类的父子孙结构
+class Animal {
+  asPet() {}
+}
+class Dog extends Animal {
+  bark() {}
+}
+class Corgi extends Dog {
+  cute() {}
+}
+
+// 存在的参数 -> 返回值的类型组合
+Animal -> Animal
+Animal -> Dog
+Animal -> Corgi
+Dog -> Dog
+Dog -> Animal
+Dog -> Corgi
+Corgi -> Animal
+Corgi -> Dog
+Corgi -> Corgi
+
+// 实际例子
+function makeDogBark(dog: Dog) {
+  dog.bark();
+}
+// 没问题：Corgi 是 Dog 的一种，它会继承 Dog 的 bark 方法
+makeDogBark(new Corgi());
+// 不行：Animal 是最近具有 bark 方法的 Dog 类的父类，所以传入的参数不一定是 Dog 类型，也有可能是 Cat 类型（Cat 类型上没有 bark 方法）
+makeDogBark(new Animal());
+
+// 传入 Animal 类型的参数最多只能调用 Animal 上的方法
+// 传入 Corgi 类型的参数可以调用 Animal、Dog、Corgi 上的方法
+```
+
+### 16 - 类型编程和类型体操
+1. 类型编程有什么作用
+- linbudu：'提高代码的稳定性、代码质量、严谨性、可读性'
+- linbudu：'能避免潜在的严重问题，比如白屏和塞满错误监控的 Cannot read property of undefined'
+
+### **17 - 内置工具类型进阶**
+0. 这章很精华，里面的一些例子在实际业务开发中业务会用到，值得反复看几遍
+- link：https://juejin.cn/book/7086408430491172901/section/7100488803369877543#heading-0
+
+1. 深层可选
+```TypeScript
+export type DeepPartial<T extends object> = {
+  // 判断 object 的每个 key 对应的 value 是不是 extends object，是的话递归处理
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+};
+
+// 深层必选
+export type DeepRequired<T extends object> = {
+  [K in keyof T]-?: T[K] extends object ? DeepRequired<T[K]> : T[K];
+};
+
+// 深层只读
+export type DeepReadonly<T extends object> = {
+  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];
+};
+
+// 深层不只读
+export type DeepMutable<T extends object> = {
+  -readonly [K in keyof T]: T[K] extends object ? DeepMutable<T[K]> : T[K];
+};
+```
+
+2. 递归剔除 null 和 undefined
+```TypeScript
+type NonNullable<T> = T extends null | undefined ? never : T;
+
+export type DeepNonNullable<T extends object> = {
+  [K in keyof T]: T[K] extends object
+    ? DeepNonNullable<T[K]>
+    : NonNullable<T[K]>;
+};
+```
+
+3. 可选为泛型或 null
+```TypeScript
+export type Nullable<T> = T | null;
+
+export type DeepNullable<T extends object> = {
+  [K in keyof T]: T[K] extends object ? DeepNullable<T[K]> : Nullable<T[K]>;
+};
+```
+
+4. 实现部分（根据传入的来定）的 key 对应的值可选
+```TypeScript
+export type MarkPropsAsOptional<
+  T extends object,
+  K extends keyof T = keyof T
+> = Partial<Pick<T, K>> & Omit<T, K>;
+
+// MarkPropsAsOptionalStruct 中 bar 变为可选
+type MarkPropsAsOptionalStruct = MarkPropsAsOptional<
+  {
+    foo: string;
+    bar: number;
+    baz: boolean;
+  },
+  'bar'
+>;
+
+// 上述 bar 变为可选在 vscode 中 hover 效果看不出，可通过构造 & {} 的类型来使其 hover 时可看出
+type Flatten<T> = {
+  [KeyType in keyof T]: T[KeyType] extends object
+    ? Flatten<T[KeyType]>
+    : T[KeyType];
+} & {};
+// 下述 MarkPropsAsOptional type 再作用于具体的泛型参数 hover 时就可以看出
+export type MarkPropsAsOptional<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Partial<Pick<T, K>> & Omit<T, K>>;
+```
+
+5. 深层处理和双泛型参数的结合使用
+```TypeScript
+// 下述是深层的效果，单层的话 & {} 即可
+export type Flatten<T> = {
+  [KeyType in keyof T]: T[KeyType] extends object
+    ? Flatten<T[KeyType]>
+    : T[KeyType];
+} & {};
+
+export type MarkPropsAsRequired<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Omit<T, K> & Required<Pick<T, K>>>;
+
+export type MarkPropsAsReadonly<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Omit<T, K> & Readonly<Pick<T, K>>>;
+
+// 对传入的泛型 K 深层不可读
+export type MarkPropsAsMutable<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Omit<T, K> & Mutable<Pick<T, K>>>;
+
+export type MarkPropsAsNullable<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Omit<T, K> & DeepNullable<Pick<T, K>>>;
+
+export type MarkPropsAsNonNullable<
+  T extends object,
+  K extends keyof T = keyof T
+> = Flatten<Omit<T, K> & DeepNonNullable<Pick<T, K>>>;
+```
+
+6. 简单的并、交、差、补集
+- ![并交差补集](../interview-note/image/20240706-并交差补集.png)
+```TypeScript
+// 并集
+export type Concurrence<A, B> = A | B;
+// 交集
+export type Intersection<A, B> = A extends B ? A : never;
+// 差集
+export type Difference<A, B> = A extends B ? never : A;
+// 补集
+export type Complement<A, B extends A> = Difference<A, B>;
+```
+
+7. 获取函数的第一个参数的类型
+```TypeScript
+
+```
+
+8. 获取函数的最后一个参数的类型
+```TypeScript
+// 提取函数的最后一个元素方法 1
+type FunctionType = (...args: any) => any
+type LastParameter1<T extends FunctionType> = T extends (arg: infer P) => any
+  ? P
+  // 多个传参的情况
+  : T extends (...args: infer R) => any
+  // 下面这步是提取元组的最后一个类型（可能有错误）
+  ? R extends [...any, infer Q]
+    ? Q
+    : never
+  : never
+
+type FuncFoo = (arg: number) => void
+type FuncBar = (...args: string[]) => void
+type FuncBaz = (arg1: string, arg2: boolean) => void
+
+type FooLastParameter = LastParameter1<FuncFoo> // number
+type BarLastParameter = LastParameter1<FuncBar> // string
+type BazLastParameter = LastParameter1<FuncBaz> // boolean
+
+// 提取函数的最后一个元素方法 2
+type FunctionType = (...args: any[]) => any;
+type LastParameter<T extends FunctionType> = T extends (arg: infer P) => any
+  ? P
+  // 多个传参的情况
+  : T extends (...args: infer R) => any
+  ? R extends [...infer Rest, infer Q]
+    ? Q
+    : never
+  : never;
+```
+
+9. ts 内置的提取 Promise 内部值类型的工具类型
+```TypeScript
+// 判断泛型 T 是不是 null | undefined
+type Awaited<T> = T extends null | undefined
+  ? T 
+  // 判断 T 是不是兼容于对象且具备 then 方法
+  : T extends object & { then(onfulfilled: infer F): any }
+  // F 又是不是个函数
+  ? F extends (value: infer V, ...args: any) => any
+    // F 是函数的话递归调用求解
+    ? Awaited<V>
+    : never
+  : T;
+```
+
+### 18 - 模版字符串入门
+1. 模版字符串拼接
+```TypeScript
+// 可拼接的数据范围：string | number | boolean | null | undefined | bigint
+type Greet<T extends string | number | boolean | null | undefined | bigint> = `Hello ${T}`;
+
+type Greet1 = Greet<"linbudu">; // "Hello linbudu"
+type Greet2 = Greet<599>; // "Hello 599"
+type Greet3 = Greet<true>; // "Hello true"
+type Greet4 = Greet<null>; // "Hello null"
+type Greet5 = Greet<undefined>; // "Hello undefined"
+type Greet6 = Greet<0x1fffffffffffff>; // "Hello 9007199254740991"
+
+// 模版字符串的处理
+type ReverseName<Str extends string> =
+  Str extends `${infer First} ${infer Last}` ? `${Capitalize<Last>} ${First}` : Str;
+type ReversedTomHardy = ReverseName<'Tom hardy'>; // "Hardy Tom"
+type ReversedLinbudu = ReverseName<'Budu Lin'>; // "Lin Budu"
+```
+
+2. 模版字符串声明版本号
+```TypeScript
+type Version = `${number}.${number}.${number}`;
+
+const v1: Version = '1.1.0';
+// X 类型 "1.0" 不能赋值给类型 `${number}.${number}.${number}`
+const v2: Version = '1.0';
+```
+
+3. 模版字符串的自动分发来减少工作量
+```TypeScript
+type Brand = 'iphone' | 'xiaomi' | 'honor';
+type Memory = '16G' | '64G';
+type ItemType = 'official' | 'second-hand';
+
+type SKU = `${Brand}-${Memory}-${ItemType}`;
+```
+
+4. 模版字符串结合泛型的自动分发
+```TypeScript
+type SizeRecord<Size extends string> = `${Size}-Record`;
+
+type Size = 'Small' | 'Middle' | 'Large';
+// "Small-Record" | "Middle-Record" | "Huge-Record"
+type UnionSizeRecord = SizeRecord<Size>;
+```
+
+5. 重映射修改键名
+```TypeScript
+type CopyWithRename<T extends object> = {
+  // string & K 的原因在于去除掉 Symbol 类型的键（模版插值不支持 Symbol 类型）
+  [K in keyof T as `modified_${string & K}`]: T[K];
+};
+
+interface Foo {
+  name: string;
+  age: number;
+}
+
+// {
+//   modified_name: string;
+//   modified_age: number;
+// }
+type CopiedFoo = CopyWithRename<Foo>;
+```
+
+6. 字符串内置工具类型
+- linbudu：'这些工具类型专用于字符串字面量类型，包括 Uppercase、Lowercase、Capitalize 与 Uncapitalize，看名字就能知道它们的作用：字符串大写、字符串小写、首字母大写与首字母小写'
+```TypeScript
+// 全大写
+type Heavy<T extends string> = `${Uppercase<T>}`;
+type Respect<T extends string> = `${Capitalize<T>}`;
+type HeavyName = Heavy<'linbudu'>; // "LINBUDU"
+type RespectName = Respect<'linbudu'>; // "Linbudu"
+
+// 驼峰命名
+type CopyWithRename<T extends object> = {
+  [K in keyof T as `modified${Capitalize<string & K>}`]: T[K];
+};
+// {
+//   modifiedName: string;
+//   modifiedAge: number;
+// }
+type CopiedFoo = CopyWithRename<Foo>;
+```
+
+7. 从对象类型（interface、type 中找值符合要求的项）
+```TypeScript
+type PickByValueType<T extends object, Type> = {
+  [K in keyof T as T[K] extends Type ? K : never]: T[K]
+}
+
+interface Example {
+  name: string;
+  age: number;
+  isActive: boolean;
+}
+type typeOne = {
+  key1: string,
+  key2: number,
+  key3: boolean,
+}
+// Example、typeOne 均符合要求
+type StringProperties = PickByValueType<Example, string>;
+// 结果: { name: string }
+type NumberProperties = PickByValueType<Example, number>;
+// 结果: { age: number }
+type BooleanProperties = PickByValueType<Example, boolean>;
+// 结果: { isActive: boolean }
+```
+
 ### 99 - others
 1. readonly
 - linbudu：'只能将整个数组、元组标记为只读，而不能像对象那样标记某个属性为只读；一旦被标记为只读，那这个只读数组、元组的类型上，将不再具有 push、pop 等方法（即会修改原数组的方法），因此报错信息也将是类型 xxx 上不存在属性 push 这种。这一实现的本质是只读数组与只读元组的类型实际上变成了 ReadonlyArray，而不再是 Array'

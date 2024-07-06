@@ -547,6 +547,136 @@ defineExpose({
 </script>
 ```
 
+### hooks 封装
+1. useMouse hook 封装（最简单的情况这是
+```JavaScript
+// hook
+import { onMounted, onUnmounted, ref } from 'vue'
+
+export function useMouse() {
+  const x = ref(0)
+  const y = ref(0)
+
+  // 节流函数
+  function throttle(func, wait) {
+    let timeout = null
+    return function (...args) {
+      if (!timeout) {
+        timeout = setTimeout(() => {
+          func.apply(this, args)
+          timeout = null
+        }, wait)
+      }
+    }
+  }
+
+  const updateMouse = (e) => {
+    x.value = e.pageX
+    y.value = e.pageY
+  }
+
+  // 使用节流函数包裹 updateMouse
+  const throttledUpdateMouse = throttle(updateMouse, 100) // 100ms 的节流时间
+
+  onMounted(() => {
+    window.addEventListener('mousemove', throttledUpdateMouse)
+  })
+  onUnmounted(() => {
+    window.removeEventListener('mousemove', throttledUpdateMouse)
+  })
+
+  return { x, y }
+}
+
+// 使用
+import { useMouse } from '../hooks/useMouse.js'
+const { x, y } = useMouse()
+
+<div class="mouse">{{ x }} - {{ y }}</div>
+```
+
+### ref 相关
+1. isRef
+```JavaScript
+const refOne = ref(1)
+const notRefTwo = 2
+console.log('1', isRef(refOne)) // true
+console.log('2', isRef(notRefTwo)) // false
+console.log('3', unref(refOne)) // 1
+console.log('4', unref(notRefTwo)) // 2
+console.log('5', isRef(reactiveThree)) // false
+console.log('6', unref(reactiveThree)) // { value: 3 }
+
+// isProxy：检查一个对象是否是由 reactive()、readonly()、shallowReactive() 或 shallowReadonly() 创建的代理
+console.log('7', isProxy(refOne.value)) // false
+console.log('8', isProxy(notRefTwo)) // false
+console.log('9', isProxy(reactiveThree)) // true
+```
+
+2. unRef
+```JavaScript
+// 可以看作如下实现（兼容 ref 数据和不是 ref 的数据
+val = isRef(val) ? val.value : val
+```
+
+3. toRefs
+```JavaScript
+function useFeatureX() {
+  const state = reactive({
+    foo: 1,
+    bar: 2
+  })
+
+  // ...基于状态的操作逻辑
+
+  // 在返回时都转为 ref
+  return toRefs(state)
+}
+
+// 可以解构而不会失去响应性
+// 不通过解构获取通过 . 操作符获取的话不会丢失响应式
+const { foo, bar } = useFeatureX()
+```
+
+4. 其它响应式工具
+- ![响应式 tools](../interview-note/image/20240706-响应式-tools.png)
+
+5.  为什么通过解构赋值获取响应式的数据会存在丢失响应式的情况？
+- GPT：'在 Vue 3 中，reactive 创建的响应式对象是一个 Proxy 对象，它拦截对其属性的访问和修改，以实现响应式的效果。当你对 reactive 对象进行解构赋值时，实际上只是复制了这些属性的值，而不是保持对 Proxy 对象的引用。这样，解构后的值不再受到 Proxy 的拦截，自然就失去了响应式的能力'
+- GPT：'无论是数组解构还是对象解构，在涉及 reactive 对象时都会丢失响应性。这是因为解构赋值的本质是将值从原对象中复制到新的变量中，而不是保留对原对象的引用'
+```JavaScript
+// 对象解构
+import { reactive } from 'vue';
+function useFeatureX() {
+  const state = reactive({
+    foo: 1,
+    bar: 2
+  });
+
+  return state;
+}
+const state = useFeatureX();
+
+const { foo, bar } = state;
+console.log(foo); // 1
+state.foo = 10;
+console.log(foo); // 仍然是 1，不会响应变化
+
+// 数组解构
+import { reactive } from 'vue';
+function useFeatureY() {
+  const state = reactive([1, 2, 3]);
+
+  return state;
+}
+
+const state = useFeatureY();
+const [first, second, third] = state;
+console.log(first); // 1
+state[0] = 10;
+console.log(first); // 仍然是 1，不会响应变化
+```
+
 ### others
 1. 根据传入项快速删除数据中的某一项
 ```JavaScript
