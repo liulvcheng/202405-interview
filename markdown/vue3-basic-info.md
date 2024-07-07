@@ -300,12 +300,77 @@ watch(
   (count) => {
     console.log('count', count)
   },
+  // 深度
   { deep: true },
+  // 立即监听一次
   { immediate: true },
   // 仅侦听一次
   { once: true }
 )
 ```
+
+3. immediate: true
+- 官方文档：'watch 默认是懒执行的：仅当数据源变化时，才会执行回调。但在某些场景中，我们希望在创建侦听器时，立即执行一遍回调，设置 immediate 为 true 即可'
+
+4. watch vs watchEffect
+- ![watch vs watchEffect](../interview-note/image/20240707-watch-watcheffect.png)
+
+5. flush: 'post'
+- 官方文档：'如果想在侦听器回调中能访问被 Vue 更新之后的所属组件的 DOM，你需要指明 flush: 'post' 选项'
+- GPT：'通常，flush: 'post' 选项用于确保回调函数在 DOM 完成更新后才执行。这在需要确保回调函数中访问的是最新的 DOM 状态时非常有用。例如，当你需要在响应式数据变化后立即进行 DOM 操作或依赖最新的 DOM 状态时，可以使用 flush: 'post''
+```JavaScript
+watch(source, callback, {
+  flush: 'post'
+})
+
+watchEffect(callback, {
+  flush: 'post'
+})
+```
+
+6. 同步监听器
+- 官方文档：'你还可以创建一个同步触发的侦听器，它会在 Vue 进行任何更新之前触发'
+- GPT：'当你需要立即响应数据变化，而不等待 DOM 更新'
+```JavaScript
+watch(source, callback, {
+  flush: 'sync'
+})
+
+watchEffect(callback, {
+  flush: 'sync'
+})
+```
+
+7. 取消监听器
+- 调用 watch、watchEffect 的返回值函数即可
+```JavaScript
+const unwatch = watchEffect(() => {})
+// ...当该侦听器不再需要时
+unwatch()
+```
+
+8. 异步监听器
+- 官方文档：'注意，需要异步创建侦听器的情况很少，请尽可能选择同步创建。如果需要等待一些异步数据，你可以使用条件式的侦听逻辑'
+```JavaScript
+// 条件式的监听逻辑
+// 需要异步请求得到的数据
+const data = ref(null)
+
+watchEffect(() => {
+  if (data.value) {
+    // 数据加载后执行某些操作...
+  }
+})
+watch(
+  () => data.value,
+  () => {
+    if (data.value) {
+      ...
+    }
+  }
+)
+```
+
 
 ### 模板引用、ref
 1. 组件挂载后才能访问到 ref 绑定的组件值，业务处理时需考虑为 null 的情况；watch 中也是
@@ -676,6 +741,210 @@ console.log(first); // 1
 state[0] = 10;
 console.log(first); // 仍然是 1，不会响应变化
 ```
+
+6. 为什么要使用 ref
+- 官方文档：'通过一个基于依赖追踪的响应式系统实现的。当一个组件首次渲染时，Vue 会追踪在渲染过程中使用的每一个 ref。然后，当一个 ref 被修改时，它会触发追踪它的组件的一次重新渲染'
+- 官方文档：'在其内部，Vue 在它的 getter 中执行追踪，在它的 setter 中执行触发'
+```JavaScript
+// ref 可以看作是下述代码实现
+// 伪代码，不是真正的实现
+const myRef = {
+  _value: 0,
+  get value() {
+    track()
+    return this._value
+  },
+  set value(newValue) {
+    this._value = newValue
+    trigger()
+  }
+}
+```
+
+7. reactive
+- 官方文档：'响应式对象是 JavaScript 代理（Proxy），其行为就和普通对象一样。不同的是，Vue 能够拦截对响应式对象所有属性的访问和修改，以便进行依赖追踪和触发更新'
+```JavaScript
+const raw = {}
+const proxy = reactive(raw)
+
+// 代理对象和原始对象不是全等的
+console.log(proxy === raw) // false
+
+// 在同一个对象上调用 reactive() 会返回相同的代理
+console.log(reactive(raw) === proxy) // true
+// 在一个代理上调用 reactive() 会返回它自己
+console.log(reactive(proxy) === proxy) // true
+```
+
+8. ref 解包失败
+```JavaScript
+const count = ref(0)
+const object = { id: ref(1) }
+
+// 下述模版插值语法会解析失败，显示 [object Object]1
+<div>{{ object.id + 1 }}</div>
+// 这个不会解析失败，显示 2
+<div>{{ object.id }}</div>
+```
+
+### v-bind
+1. 动态绑定多个值（绑定对象）
+```JavaScript
+const objectOfAttrs = {
+  id: 'container',
+  class: 'wrapper',
+  style: 'background-color:green'
+}
+
+<div v-bind="objectOfAttrs"></div>
+```
+
+2. 完整的指令语法
+- ![指令语法](../interview-note/image/20240707-指令语法.png)
+
+### 计算属性
+1. 计算属性缓存 vs 方法
+- 官方文档：'不同之处在于计算属性值会基于其响应式依赖被缓存，一个计算属性仅会在其响应式依赖更新时（且被调用时）才重新计算；方法调用总是会在重渲染发生时再次执行函数'
+
+2. 可写计算属性
+```JavaScript
+<script setup>
+import { ref, computed } from 'vue'
+
+const firstName = ref('John')
+const lastName = ref('Doe')
+
+const fullName = computed({
+  // getter
+  get() {
+    return firstName.value + ' ' + lastName.value
+  },
+  // setter
+  set(newValue) {
+    // 注意：我们这里使用的是解构赋值语法
+    // 根据传入的值解构
+    [firstName.value, lastName.value] = newValue.split(' ')
+  }
+})
+</script>
+
+// @click 会走 fullName 的 set 方法
+<div class="counter" @click="fullName = `${Date.now()} ${Date.now()}`">
+  {{ fullName }}
+</div>
+```
+
+### 类与样式绑定
+1. 绑定 computed
+```JavaScript
+const isActive = ref(true)
+const error = ref(null)
+
+const classObject = computed(() => ({
+  active: isActive.value && !error.value,
+  'text-danger': error.value && error.value.type === 'fatal'
+}))
+
+<div :class="classObject"></div>
+```
+
+2. 绑定数组
+```JavaScript
+const activeClass = ref('active')
+const errorClass = ref('text-danger')
+
+<div :class="[activeClass, errorClass]"></div>
+// 渲染结果
+<div class="active text-danger"></div>
+
+// 数组中嵌套对象，下述两种写法相同，第一种个人感觉会好一些
+<div :class="[{ activeClass: isActive }, errorClass]"></div>
+<div :class="{ activeClass: isActive, errorClass: true }"></div>
+```
+
+3. 组件绑定 class 且组件存在多个根节点时需指定绑定的根节点
+```JavaScript
+// MyComponent 模板使用 $attrs 时，指定 p 标签对绑定 class
+<p :class="$attrs.class">Hi!</p>
+<span>This is a child component</span>
+
+<MyComponent class="baz" />
+
+// 下述为实际渲染结果
+<p class="baz">Hi!</p>
+<span>This is a child component</span>
+```
+
+### 条件渲染
+1. v-if 和 v-show
+- ![if 和 show 的区别](../interview-note/image/20240707-if-show.png)
+
+### 列表渲染
+1. v-for 添加 key 的作用
+- 官方文档：'以便它可以跟踪每个节点的标识，从而重用和重新排序现有的元素，你需要为每个元素对应的块提供一个唯一的 key attribute'
+
+2. v-for 遍历 Array 和 Object
+```JavaScript
+<ul>
+  <li v-for="(value, key, index) in myObject" :key="value">
+    {{ key }} - {{ value }} - {{ index }}
+  </li>
+</ul>
+<hr />
+<ul>
+  <li v-for="({ key, value }, index) in list" :key="key">
+    {{ key }} - {{ value }} - {{ index }}
+  </li>
+</ul>
+
+const list = reactive([
+  { key: 1, value: '111' },
+  { key: 2, value: '222' },
+  { key: 3, value: '333' },
+])
+const myObject = reactive({
+  title: 'How to do lists in Vue',
+  author: 'Jane Doe',
+  publishedAt: '2016-04-10',
+})
+```
+
+3. 数组变化方法，如 v-for 绑定的是 Array 的话会有影响
+- pop、push、shift、unshift、sort、reverse、splice
+- 计算属性或其他引用原始数据的时候不应该改变原始数组，简单的数据可以通过 ... 拷贝一份
+```JavaScript
+return numbers.reverse() // 不推荐
+return [...numbers].reverse() // 推荐
+```
+
+### 事件处理
+1. 在内联事件中处理器中访问原生 DOM 事件
+```JavaScript
+// 使用特殊的 $event 变量
+<button @click="warn('Form cannot be submitted yet.', $event)">
+  Submit
+</button>
+
+// 使用内联箭头函数
+<button @click="(event) => warn('Form cannot be submitted yet.', event)">
+  Submit
+</button>
+
+function warn(message, event) {
+  // 这里可以访问原生事件
+  if (event) {
+    event.preventDefault()
+  }
+  alert(message)
+}
+```
+
+### 模版引用
+1. 可以通过 DOM 上绑定的 ref 获取到 DOM 的一些属性、方法或者对 DOM 进行一些操作
+- 官方文档：'注意，你只可以在组件挂载后才能访问模板引用（即 onMounted 生命周期中访问或者在 onBeforeMount 中通过 nextTick 来访问）'
+
+2. v-for 上的模版引用
+- 官方文档：'当在 v-for 中使用模板引用时，对应的 ref 中包含的值是一个数组，它将在元素被挂载后包含对应整个列表的所有元素；ref 数组并不保证与源数组相同的顺序；需要注意 v-for 渲染的项有没有通过 v-if 或者 v-show 隐藏的情况'
 
 ### others
 1. 根据传入项快速删除数据中的某一项

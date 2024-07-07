@@ -45,7 +45,7 @@ type TupleToObject<T extends readonly any[]> = {
 type Type2 = TupleToObject<typeof tuple>
 const num2: Type2 = { 1: '1', here: 'here', 3: 3 }
 
-// 注意 keyof any 的返回值：远影在于对象只能用 string、number、symbol 三种类型做键
+// 注意 keyof any 的返回值：原因在于对象只能用 string、number、symbol 三种类型做键
 // string | number | symbol
 type Type3 = keyof any
 
