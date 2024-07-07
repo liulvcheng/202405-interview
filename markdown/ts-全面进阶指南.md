@@ -1332,6 +1332,9 @@ type CopiedFoo = CopyWithRename<Foo>;
 7. 从对象类型（interface、type 中找值符合要求的项）
 ```TypeScript
 type PickByValueType<T extends object, Type> = {
+  // 拆分为：01 - K in keyof T as T[K]
+  // 02 - T[K] extends Type ? K : never
+  // 上述 K 是 key，T[K] 表示的是值
   [K in keyof T as T[K] extends Type ? K : never]: T[K]
 }
 
@@ -1352,6 +1355,250 @@ type NumberProperties = PickByValueType<Example, number>;
 // 结果: { age: number }
 type BooleanProperties = PickByValueType<Example, boolean>;
 // 结果: { isActive: boolean }
+```
+
+### 19 - 模版字符串进阶
+1. 实现 includes
+```TypeScript
+type _Include<
+  Str extends string,
+  Search extends string
+> = Str extends `${infer _R1}${Search}${infer _R2}` ? true : false;
+
+// 专门处理 ''.includes('') 也应该返回 true 的情况
+type Include<Str extends string, Search extends string> = Str extends ''
+  ? Search extends ''
+    ? true
+    : false
+  : _Include<Str, Search>;
+```
+
+2. 实现 trim、trimStart、trimEnd
+```TypeScript
+// 每次去掉一个空格，再通过递归去除剩下的
+type TrimLeft<Str extends string> = Str extends ` ${infer R}` ? TrimLeft<R> : Str;
+type TrimRight<Str extends string> = Str extends `${infer R} ` ? TrimRight<R> : Str;
+// trim 即是 trimStart 和 trimEnd 的结合
+type Trim<Str extends string> = TrimLeft<TrimRight<Str>>;
+```
+
+3. 实现 startsWith、endsWith
+```TypeScript
+type _StartsWith<
+  Str extends string,
+  Search extends string
+> = Str extends `${Search}${infer _R}` ? true : false;
+
+// 处理 ''.startsWith('') 的情况
+type StartsWith<Str extends string, Search extends string> = Str extends ''
+  ? Search extends ''
+    ? true
+    : _StartsWith<Str, Search>
+  : _StartsWith<Str, Search>;
+
+type StartsWithRes1 = StartsWith<'linbudu', 'lin'>; // true
+type StartsWithRes2 = StartsWith<'linbudu', ''>; // true
+type StartsWithRes3 = StartsWith<'linbudu', ' '>; // false
+type StartsWithRes4 = StartsWith<'', ''>; // true
+type StartsWithRes5 = StartsWith<' ', ''>; // true
+```
+
+4. 实现 replace
+```TypeScript
+export type Replace<
+  Str extends string,
+  Search extends string,
+  Replacement extends string
+> = Str extends `${infer Head}${Search}${infer Tail}`
+  // 将 Search 用 Replacement 替换
+  ? `${Head}${Replacement}${Tail}`
+  : Str;
+
+// "林不渡也不是不能渡"
+type ReplaceRes1 = Replace<'林不渡', '不', '不渡也不是不能'>;
+// 不发生替换，仍然是"林不渡"
+type ReplaceRes2 = Replace<'林不渡', '？', '？？'>; //
+```
+
+5. replaceAll
+```TypeScript
+export type ReplaceAll<
+  Str extends string,
+  Search extends string,
+  Replacement extends string
+> = Str extends `${infer Head}${Search}${infer Tail}`
+  // 递归实现即可
+  ? ReplaceAll<`${Head}${Replacement}${Tail}`, Search, Replacement>
+  : Str;
+  
+// "mmm.linbudu.top"
+type ReplaceAllRes1 = ReplaceAll<'www.linbudu.top', 'w', 'm'>;
+// "www-linbudu-top"
+type ReplaceAllRes2 = ReplaceAll<'www.linbudu.top', '.', '-'>;
+```
+
+6. 结合 replace 和 replaceAll，通过标识符判断需要使用哪个
+```TypeScript
+export type Replace<
+  Input extends string,
+  Search extends string,
+  Replacement extends string,
+  // true - 替换所有；false - 不替换所有
+  ShouldReplaceAll extends boolean = false
+> = Input extends `${infer Head}${Search}${infer Tail}`
+  ? ShouldReplaceAll extends true
+    ? Replace<
+        `${Head}${Replacement}${Tail}`,
+        Search,
+        Replacement,
+        ShouldReplaceAll
+      >
+    : `${Head}${Replacement}${Tail}`
+  : Input;
+```
+
+7. 获取字符串的长度
+```TypeScript
+// Trim<T>, ''：去掉空格
+// Split<Trim<T>, ''>：得到 split 后的数组
+// Split<Trim<T>, ''>['length']：得到长度
+export type StrLength<T extends string> = Split<Trim<T>, ''>['length'];
+
+type StrLengthRes1 = StrLength<'linbudu'>; // 7
+type StrLengthRes2 = StrLength<'lin budu'>; // 8
+type StrLengthRes3 = StrLength<''>; // 0
+type StrLengthRes4 = StrLength<' '>; // 0
+```
+
+8. 实现 join
+```TypeScript
+
+export type Join<
+  List extends Array<string | number>,
+  Delimiter extends string
+> = List extends []
+  // 边界处理 01
+  ? ''
+  // 边界处理 02
+  : List extends [string | number]
+  ? `${List[0]}`
+  : List extends [string | number, ...infer Rest]
+  ? // @ts-expect-error
+    `${List[0]}${Delimiter}${Join<Rest, Delimiter>}`
+  : string;
+
+// "lin-bu-du"
+// 数组作用参数有三个，而 - 只作用了两次
+type JoinRes3 = Join<['lin', 'bu', 'du'], '-'>;
+```
+
+9. **camcelCase**
+- 'Foo-bar-baz'、'FOO-BAR-BAZ' to 'fooBarBaz'
+```TypeScript
+export type PlainObjectType = Record<string, any>;
+
+export type WordSeparators = '-' | '_' | ' ';
+
+export type Split<
+  S extends string,
+  Delimiter extends string
+> = S extends `${infer Head}${Delimiter}${infer Tail}`
+  ? [Head, ...Split<Tail, Delimiter>]
+  : S extends Delimiter
+  ? []
+  : [S];
+
+type CapitalizeStringArray<Words extends readonly any[], Prev> = Words extends [
+  `${infer First}`,
+  ...infer Rest
+]
+  ? First extends undefined
+    ? ''
+    : First extends ''
+    ? CapitalizeStringArray<Rest, Prev>
+    : `${Prev extends '' ? First : Capitalize<First>}${CapitalizeStringArray<
+        Rest,
+        First
+      >}`
+  : '';
+
+type CamelCaseStringArray<Words extends readonly string[]> = Words extends [
+  `${infer First}`,
+  ...infer Rest
+]
+  ? Uncapitalize<`${First}${CapitalizeStringArray<Rest, First>}`>
+  : never;
+
+export type CamelCase<K extends string> = CamelCaseStringArray<
+  Split<K extends Uppercase<K> ? Lowercase<K> : K, WordSeparators>
+>;
+```
+
+10. 操作的结合
+- trim 是 trimStart、trimEnd 的结合
+- startsWith、endsWith 作用相反
+- replace 是 includes 匹配后替换的处理
+- replaceAll 是 replace 的递归处理（replaceAll 需要注意要替换的 str 中包含了匹配词的情况）
+
+### 20 - 类型声明、类型指令、命名空间
+1. 类型检查指令
+```TypeScript
+// 禁用 eslint 检查
+// eslint-disable-next-lint
+
+// 禁用 prettier 检查
+// prettier-ignore
+
+// 忽视对下一行的 ts 检查
+// @ts-ignore
+const name: string = 599;
+
+// 禁用对下一行的检查（如果下一行本来没问题但使用了的话会报错）
+// @ts-expect-error
+const name: string = 599;
+// @ts-expect-error 错误使用此指令，报错
+const age: number = 599;
+
+// ts-check、ts-nocheck 禁用掉对整个文件的检查
+```
+
+2. 类型声明
+- declare
+- linbudu：'为缺失类型的模块声明类型'
+- linbudu：'declare module 通常用于为没有提供类型定义的库进行类型的补全，以及为非代码文件提供基本类型定义'
+
+
+3. 值导入和类型导入
+```TypeScript
+import { Foo } from "./foo";
+import type { FooType } from "./foo";
+
+or
+
+import { Foo, type FooType } from "./foo";
+```
+
+4. 现代前端开发模块导入规范
+```TypeScript
+// React
+import { useEffect } from 'react';
+
+// 组件
+import { Button, Dialog } from 'ui';
+import { ChildComp } from './child';
+
+// utils、hooks 等
+import { store } from '@/store'
+import { useCookie } from '@/hooks/useCookie';
+import { SOME_CONSTANTS } from '@/utils/constants';
+
+// type
+import type { FC } from 'react';
+import type { Foo } from '@/typings/foo';
+import type { Shared } from '@/typings/shared';
+
+// css
+import styles from './index.module.scss';
 ```
 
 ### 99 - others
@@ -1444,3 +1691,9 @@ type IsUnknown<T> = unknown extends T
     : true
   : false;
 ```
+
+9. type 和 interface 的区别
+- linbudu：'interface 就是描述对象对外暴露的接口，其不应该具有过于复杂的类型逻辑，最多局限于泛型约束与索引类型这个层面。而 type alias 就是用于将一组类型的重命名，或是对类型进行复杂编程'
+
+10. 为什么需要 top type（any、unknown）和 bottom type（never）？
+- linbudu：'在实际开发中，我们不可能确保对所有地方的类型都进行精确的描述，因此就需要 Top Type 来表示一个包含任意类型的类型。而在类型编程中，如果对两个不存在交集的类型强行进行交集运算，也需要一个类型表示这个不存在的类型。这就是 Top Type 与 Bottom Type 的存在意义'

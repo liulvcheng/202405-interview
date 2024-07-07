@@ -780,5 +780,80 @@ const copyText = async val => {
 
 3. 给某个字段设定了 {} 的默认值，而每次给该字段设置 {} 时都会创建一部分内存空间用来存储，因此 useEffect 引用到该字段时就会每次都会有副作用（即 effect）
 
+### 扁平化数据转 tree
+1. 循环 + map
+```JavaScript
+function arrayToTree(arr) {
+  let map = {} // 用来存储 id 对应的项
+  let result = [] // 用来存储最终的树形结构
+
+  // 首先将数组中的每个项放入 map 中
+  arr.forEach((item) => {
+    map[item.id] = { ...item, children: [] }
+  })
+
+  // 然后根据 pid 组装树结构
+  arr.forEach((item) => {
+    if (item.pid === 0) {
+      // 如果 pid 为 0，说明是根节点，直接放入 result
+      result.push(map[item.id])
+    } else {
+      // 否则，找到其父节点，将当前项放入父节点的 children 数组中
+      // 对于 { id: 2, name: '部门2', pid: 1 }, 这一项而言，item.pid 为 1，item.id 为 2，所以找到 map[1]，将当前项放入 map[1].children 数组中
+      // 经过上述的拼接就将根结点和其它节点联系起来了
+      map[item.pid].children.push(map[item.id])
+    }
+  })
+
+  return result
+}
+
+let arr = [
+  { id: 1, name: '部门1', pid: 0 },
+  { id: 2, name: '部门2', pid: 1 },
+  { id: 3, name: '部门3', pid: 1 },
+  { id: 4, name: '部门4', pid: 3 },
+  { id: 5, name: '部门5', pid: 4 },
+]
+
+console.log(JSON.stringify(arrayToTree(arr), null, 2))
+```
+
+2. reduce + map
+```JavaScript
+function arrayToTree(arr) {
+  let map = {} // 用来存储 id 对应的项
+
+  // 将数组中的每个项放入 map 中
+  // 预先设置的话 arr 的顺序混乱也没关系
+  arr.forEach((element) => {
+    map[element.id] = { ...element, children: [] }
+  })
+
+  return arr.reduce((result, item) => {
+    // 根据 pid 组装树结构
+    if (item.pid === 0) {
+      // 如果 pid 为 0，说明是根节点，直接放入 result
+      result.push(map[item.id])
+    } else {
+      // 否则，找到其父节点，将当前项放入父节点的 children 数组中
+      map[item.pid].children.push(map[item.id])
+    }
+    return result
+  }, [])
+}
+
+// arr 中 id 或者 pid 的排列顺序对结果没影响
+let arr = [
+  { id: 2, name: '部门2', pid: 1 },
+  { id: 1, name: '部门1', pid: 0 },
+  { id: 3, name: '部门3', pid: 1 },
+  { id: 5, name: '部门5', pid: 4 },
+  { id: 4, name: '部门4', pid: 3 },
+]
+
+console.log(JSON.stringify(arrayToTree(arr), null, 2))
+```
+
 
 
