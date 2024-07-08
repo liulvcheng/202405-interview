@@ -167,8 +167,6 @@ const title = defineModel('title', {
   validator: value => typeof value === 'string' && value.length > 0,
   // 数据类型
   type: String,
-  // 将传入的值在子组件使用时进行处理（此处为去掉前后空格）
-  coerce: value => value.trim()
 });
 ```
 
@@ -399,27 +397,47 @@ const emits = defineEmits([ 'change', 'delete' ])
 ```
 
 2. props
-- 命名使用 camelCase，传入使用 kebab-case
+- 子组件命名使用 camelCase，父组件传入使用 kebab-case
 
 - props 作为局部数据属性使用
 ```JavaScript
 const props = defineProps(['initialCounter'])
 // 初始化通过 props 赋值，不需要在 life cycle 中赋值了
+// 适用于父组件传入的 props 子组件使用时不需要在生命周期中注册，直接将其作为参数设置给子组件的属性
 const counter = ref(props.initialCounter)
 ```
 
-- 会更改 props 的值
+- 会更改 props 的值（保留原始 props 不变，创建 computed 来实现符合我们要求的格式）
 ```JavaScript
 const props = defineProps(['size'])
 const normalizedSize = computed(() => props.size.trim().toLowerCase())
 ```
 
+- 官方文档：'除 Boolean 外的未传递的可选 prop 将会有一个默认值 undefined；boolean 是 false'
+
+```JavaScript
+defineProps({
+  propsA: {
+    // 类型
+    type: String,
+    // 是否必须
+    required: true;
+    // 默认值
+    default: 'success',
+    // 校验函数
+    validator: (value) => {
+      return ['success', 'warning', 'danger'].includes(value)
+    }
+  }
+})
+```
+
 3. emits
-- 触发使用 camcelCase，父组件接收使用 kebab-case
+- 子组件触发使用 camcelCase，父组件接收使用 kebab-case
 
-emit('create', item1, item2, item3)
+- emit('create', item1, item2, item3)
 
-emit 校验
+- emit 校验
 ```JavaScript
 <script setup>
 const emit = defineEmits({
@@ -429,6 +447,7 @@ const emit = defineEmits({
   // 校验 submit 事件
   submit: ({ email, password }) => {
     if (email && password) {
+      // 通过返回 boolean 值来判断是否合法，true 表示合法，false 反之
       return true
     } else {
       console.warn('Invalid submit event payload!')
@@ -439,6 +458,17 @@ const emit = defineEmits({
 
 function submitForm(email, password) {
   emit('submit', { email, password })
+}
+</script>
+```
+
+- emit 调用需在 emit 声明之后
+```JavaScript
+<script setup>
+const emit = defineEmits(['inFocus', 'submit'])
+
+function buttonClick() {
+  emit('submit')
 }
 </script>
 ```
@@ -946,6 +976,383 @@ function warn(message, event) {
 2. v-for 上的模版引用
 - 官方文档：'当在 v-for 中使用模板引用时，对应的 ref 中包含的值是一个数组，它将在元素被挂载后包含对应整个列表的所有元素；ref 数组并不保证与源数组相同的顺序；需要注意 v-for 渲染的项有没有通过 v-if 或者 v-show 隐藏的情况'
 
+### 组件注册
+1. 全局注册
+- 全局注册的组件不需要在具体业务中引用
+- 全局注册的问题
+  - 官方文档：'全局注册，但并没有被使用的组件无法在生产打包时被自动移除 (也叫“tree-shaking”)。如果你全局注册了一个组件，即使它并没有被实际使用，它仍然会出现在打包后的 JS 文件中'
+  - 官方文档：'全局注册在大型项目中使项目的依赖关系变得不那么明确。在父组件中使用子组件时，不太容易定位子组件的实现。和使用过多的全局变量一样，这可能会影响应用长期的可维护性'
+  - 与上述相反局部注册的优点就是 tree-shaking 更加友好，依赖关系更加明确
+```JavaScript
+// 01 - 直接写 template 模版
+import { createApp } from 'vue'
+const app = createApp({})
+app.component(
+  // 注册的名字
+  'MyComponent',
+  // 组件的实现
+  {
+    /* ... */
+  }
+)
+
+// 02 - import 导入的方式注册
+import MyComponent from './App.vue'
+app.component('MyComponent', MyComponent)
+
+// 03 - 链式注册
+app
+  .component('ComponentA', ComponentA)
+  .component('ComponentB', ComponentB)
+  .component('ComponentC', ComponentC)
+```
+
+2. 局部注册
+```JavaScript
+// 01 - setup 的方式
+<script setup>
+import ComponentA from './ComponentA.vue'
+</script>
+
+<template>
+  <ComponentA />
+</template>
+
+// 02 - setup return 的方式，需要手动注册
+import ComponentA from './ComponentA.js'
+export default {
+  components: {
+    ComponentA
+  },
+  setup() {
+    // ...
+  }
+}
+```
+
+### props
+1. 命名规范
+```JavaScript
+// 父传子使用 kebab-case
+<MyComponent greeting-message="hello" />
+
+// 子注册、使用 camelCase
+defineProps({
+  greetingMessage: String
+})
+<span>{{ greetingMessage }}</span>
+```
+
+### 异步组件
+1. 异步组件的注册
+```JavaScript
+// 01 - 全局注册
+app.component('MyComponent', defineAsyncComponent(() =>
+  import('./components/MyComponent.vue')
+))
+
+// 02 - 局部注册
+<script setup>
+import { defineAsyncComponent } from 'vue'
+// 官方文档：'AdminPage 是一个外层包装过的组件，仅在页面需要它渲染时才会调用加载内部实际组件的函数。它会将接收到的 props 和插槽传给内部组件，所以你可以使用这个异步的包装组件无缝地替换原始组件，同时实现延迟加载'
+const AdminPage = defineAsyncComponent(() =>
+  import('./components/AdminPageComponent.vue')
+)
+</script>
+<template>
+  <AdminPage />
+</template>
+```
+
+2. 错误处理
+```JavaScript
+const AsyncComp = defineAsyncComponent({
+  // 加载函数
+  loader: () => import('./Foo.vue'),
+
+  // 加载异步组件时使用的组件
+  loadingComponent: LoadingComponent,
+  // 展示加载组件前的延迟时间，默认为 200ms
+  delay: 200,
+
+  // 加载失败后展示的组件
+  errorComponent: ErrorComponent,
+  // 如果提供了一个 timeout 时间限制，并超时了
+  // 也会显示这里配置的报错组件，默认值是：Infinity
+  timeout: 3000
+})
+```
+
+### 组合式函数
+1. 不同 hooks 之间的组合
+```JavaScript
+// event.js
+import { onMounted, onUnmounted } from 'vue'
+export function useEventListener(target, event, callback) {
+  // 如果你想的话，
+  // 也可以用字符串形式的 CSS 选择器来寻找目标 DOM 元素
+  onMounted(() => target.addEventListener(event, callback))
+  onUnmounted(() => target.removeEventListener(event, callback))
+}
+
+// mouse.js
+import { ref } from 'vue'
+import { useEventListener } from './event'
+export function useMouse() {
+  const x = ref(0)
+  const y = ref(0)
+  useEventListener(window, 'mousemove', (event) => {
+    x.value = event.pageX
+    y.value = event.pageY
+  })
+  return { x, y }
+}
+```
+
+2. 响应式 hook
+```JavaScript
+// fetch.js
+import { ref } from 'vue'
+export function useFetch(url) {
+  const data = ref(null)
+  const error = ref(null)
+
+  fetch(url)
+    .then((res) => res.json())
+    .then((json) => (data.value = json))
+    .catch((err) => (error.value = err))
+
+  return { data, error }
+}
+
+const url = ref('/initial-url')
+const { data, error } = useFetch(url)
+// 这将会重新触发 fetch
+url.value = '/new-url'
+```
+
+3. option api 中使用 hook
+```JavaScript
+import { useMouse } from './mouse.js'
+import { useFetch } from './fetch.js'
+
+export default {
+  setup() {
+    const { x, y } = useMouse()
+    const { data, error } = useFetch('...')
+    return { x, y, data, error }
+  },
+  mounted() {
+    // setup() 暴露的属性可以在通过 `this` 访问到
+    console.log(this.x)
+  }
+  // ...其他选项
+}
+```
+
+### 内置组件 - Transition
+1. 官方文档：'<Transition> 仅支持单个元素或组件作为其插槽内容。如果内容是一个组件，这个组件必须仅有一个根元素'
+
+2. 为过渡效果命名
+```JavaScript
+<Transition name="fade">
+  ...
+</Transition>
+
+// fade 开头
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+```
+
+3. transform 和 opacity 的好处
+- 官方文档：'他们在动画过程中不会影响到 DOM 结构，因此不会每一帧都触发昂贵的 CSS 布局重新计算'
+- 官方文档：'大多数的现代浏览器都可以在执行 transform 动画时利用 GPU 进行硬件加速'
+- 官方文档：'相比之下，像 height 或者 margin 这样的属性会触发 CSS 布局变动，因此执行它们的动画效果更昂贵，需要谨慎使用'
+
+4. 初次渲染时添加过渡效果
+```JavaScript
+// 添加 appear 属性
+<Transition appear>
+  ...
+</Transition>
+```
+
+5. 组件间的过渡
+```JavaScript
+// mode 设置为 out-in 可以理解为过渡效果为原有的先 out（消失）新加的在 in（添加）
+<Transition name="fade" mode="out-in">
+  <component :is="activeComponent"></component>
+</Transition>
+```
+
+6. 计数器自动增加过渡效果
+```JavaScript
+<script setup>
+import { ref } from 'vue';
+
+const count = ref(0);
+
+// 每 1000ms 变化一次
+setInterval(() => {
+  count.value++;
+}, 1000);
+</script>
+
+<template>
+  <div class="wrapper">
+  // out-in：先 out 在 in，默认是 out、in 效果同时触发
+  <Transition mode="out-in">
+    // 为需要应用过渡效果的 DOM 绑定 key，当 key 变化时会自动触发过渡效果
+    <span :key="count">{{ count }}</span>
+  </Transition>
+  </div>
+</template>
+
+<style scoped>
+span{
+  font-size: 4rem;
+}
+.wrapper{
+  position:relative;
+}
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+  position: absolute;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+</style>
+```
+
+7. 什么条件下会触发过渡效果
+- 官方文档：'v-if、v-show、Component 上绑定的 is 改变时、DOM 元素绑定的 key 变化时'
+
+### 内置组件 - TransitionGroup
+1. 官方文档：'<TransitionGroup> 是一个内置组件，用于对 v-for 列表中的元素或组件的插入、移除和顺序改变添加动画效果'
+
+2. 和 Transition 的区别
+- ![TransitionGroup](../interview-note/image/20240708-transitiongroup.png)
+
+### 内置组件 - KeepAlive
+1. 最大缓存组件数
+```JavaScript
+// 设置 max
+<KeepAlive :max="10">
+  <component :is="activeComponent" />
+</KeepAlive>
+```
+
+2. 缓存实例的生命周期
+- 官方文档：'当一个组件实例从 DOM 上移除但因为被 <KeepAlive> 缓存而仍作为组件树的一部分时，它将变为不活跃状态而不是被卸载。当一个组件实例作为缓存树的一部分插入到 DOM 中时，它将重新被激活；可通过 onActivated 和 onDeactivated 这两个生命周期来触发一些副作用'
+- 官方文档：'onActivated 在组件挂载时也会调用，并且 onDeactivated 在组件卸载时也会调用'
+```JavaScript
+// 注意下述两者生命周期钩子的触发时机
+<script setup>
+import { onActivated, onDeactivated } from 'vue'
+
+onActivated(() => {
+  // 调用时机为首次挂载
+  // 以及每次从缓存中被重新插入时
+})
+
+onDeactivated(() => {
+  // 在从 DOM 上移除、进入缓存
+  // 以及组件卸载时调用
+})
+</script>
+```
+
+3. exclude、include 显性指定哪些组件该被缓存或者不该被缓存
+- 取值为数组、逗号分开的字符串、正则表达式
+```JavaScript
+<template>
+  <div>
+    <button @click="currentComponent = 'ComponentA'">Show Component A</button>
+    <button @click="currentComponent = 'ComponentB'">Show Component B</button>
+    <button @click="currentComponent = 'ComponentC'">Show Component C</button>
+    <keep-alive :exclude="['ComponentC']">
+    {/* <keep-alive :include="['ComponentC']"> */}
+      <component :is="currentComponent"></component>
+    </keep-alive>
+  </div>
+</template>
+
+<script>
+import ComponentA from './ComponentA.vue';
+import ComponentB from './ComponentB.vue';
+import ComponentC from './ComponentC.vue';
+
+export default {
+  components: {
+    ComponentA,
+    ComponentB,
+    ComponentC
+  },
+  data() {
+    return {
+      currentComponent: 'ComponentA'
+    };
+  }
+};
+</script>
+```
+
+### 内置组件 - teleport
+1. teleport 类似于 elementUI 中的 el-dialog 组件
+- 官方文档：'<Teleport> 接收一个 to prop 来指定传送的目标。to 的值可以是一个 CSS 选择器字符串，也可以是一个 DOM 元素对象。这段代码的作用就是告诉 Vue“把以下模板片段传送到 body 标签下”'
+- 注意 to 的赋值使用
+```JavaScript
+<button @click="open = true">Open Modal</button>
+
+<Teleport to="body">
+  // 通过 Teleport 将需要应用的 DOM 包裹，不需要用户自己考虑 DOM 的位置、z-index 这种
+  <div v-if="open" class="modal">
+    <p>Hello from the modal!</p>
+    <button @click="open = false">Close</button>
+  </div>
+</Teleport>
+```
+
+### 内置组件 - Suspense（实验性阶段）
+1. async setup
+```JavaScript
+// 01 - setup 手动 return 的方式
+export default {
+  // setup 函数可以是异步的
+  async setup() {
+    const res = await fetch(...)
+    const posts = await res.json()
+    return {
+      posts
+    }
+  }
+}
+
+// 02 - setup 语法糖的方式
+<script setup>
+const res = await fetch(...)
+const posts = await res.json()
+</script>
+
+<template>
+  {{ posts }}
+</template>
+```
+
+2. 自带的插槽
+- 官方文档：'<Suspense> 组件有两个插槽：#default 和 #fallback。两个插槽都只允许一个直接子节点。在可能的时候都将显示默认槽中的节点。否则将显示后备槽中的节点'
+
 ### others
 1. 根据传入项快速删除数据中的某一项
 ```JavaScript
@@ -954,6 +1361,10 @@ function removeTodo(todo) {
   todos.value.splice(todos.value.indexOf(todo), 1)
 }
 ```
+
+### 单文件组件
+1. 为什么要使用 sfc
+- ![为什么要使用 sfc](../interview-note/image/20240708-why-need-sfc.png)
 
 2. vue3 props
 ```JavaScript
