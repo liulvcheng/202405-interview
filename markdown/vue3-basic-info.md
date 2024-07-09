@@ -695,6 +695,7 @@ const { x, y } = useMouse()
 ```JavaScript
 const refOne = ref(1)
 const notRefTwo = 2
+const reactiveThree = reactive({ value: 3 })
 console.log('1', isRef(refOne)) // true
 console.log('2', isRef(notRefTwo)) // false
 console.log('3', unref(refOne)) // 1
@@ -815,6 +816,27 @@ const object = { id: ref(1) }
 <div>{{ object.id + 1 }}</div>
 // 这个不会解析失败，显示 2
 <div>{{ object.id }}</div>
+```
+
+9. shallowRef 和 shallowReactive
+- 官方文档：'Vue 确实也为此提供了一种解决方案，通过使用 shallowRef() 和 shallowReactive() 来绕开深度响应。浅层式 API 创建的状态只在其顶层是响应式的，对所有深层的对象不会做任何处理。这使得对深层级属性的访问变得更快，但代价是，我们现在必须将所有深层级对象视为不可变的，并且只能通过替换整个根状态来触发更新'
+
+10. reactive 的局限性
+- 官方文档：'有限的值类型：它只能用于对象类型 (对象、数组和如 Map、Set 这样的集合类型)。它不能持有如 string、number 或 boolean 这样的原始类型；如果要应用于原始类型的话需要通过 {} 包一层'
+- 官方文档：'对解构操作不友好：当我们将响应式对象的原始类型属性解构为本地变量时，或者将该属性传递给函数时，我们将丢失响应性连接'
+```JavaScript
+// 下述这种情况 ref 或者 reactive 定义都会导致解构出来的变量失去响应式
+const state = reactive({ count: 0 })
+
+// 当解构时，count 已经与 state.count 断开连接
+let { count } = state
+// 不会影响原始的 state
+count++
+
+// 该函数接收到的是一个普通的数字
+// 并且无法追踪 state.count 的变化
+// 我们必须传入整个对象以保持响应性
+callSomeFunction(state.count)
 ```
 
 ### v-bind
@@ -1353,15 +1375,6 @@ const posts = await res.json()
 2. 自带的插槽
 - 官方文档：'<Suspense> 组件有两个插槽：#default 和 #fallback。两个插槽都只允许一个直接子节点。在可能的时候都将显示默认槽中的节点。否则将显示后备槽中的节点'
 
-### others
-1. 根据传入项快速删除数据中的某一项
-```JavaScript
-// indexOf() 查找全等的项
-function removeTodo(todo) {
-  todos.value.splice(todos.value.indexOf(todo), 1)
-}
-```
-
 ### 单文件组件
 1. 为什么要使用 sfc
 - ![为什么要使用 sfc](../interview-note/image/20240708-why-need-sfc.png)
@@ -1389,4 +1402,509 @@ const props = defineProps({
 /* 局部样式 */
 </style>
 
+### 状态管理
+1. 用响应式 API 做简单状态管理
+```JavaScript
+// store.js
+import { reactive } from 'vue'
+// 导出全局 store
+export const store = reactive({
+  count: 0,
+  // 状态改变的方法也全局导出
+  increment() {
+    this.count++
+  }
+})
+
+// ComponentA.vue
+<script setup>
+import { store } from './store.js'
+</script>
+<template>From A: {{ store.count }}</template>
+
+// ComponentB.vue
+<script setup>
+import { store } from './store.js'
+</script>
+<template @click="store.increment()">From B: {{ store.count }}</template>
+```
+
+2. vue 中现代状态管理一般用 pinia 来实现
+
+### 服务端渲染 ssr
+1. 什么是服务端渲染
+- 官方文档：'Vue.js 是一个用于构建客户端应用的框架。默认情况下，Vue 组件的职责是在浏览器中生成和操作 DOM。然而，Vue 也支持将组件在服务端直接渲染成 HTML 字符串，作为服务端响应返回给浏览器，最后在浏览器端将静态的 HTML“激活”(hydrate) 为能够交互的客户端应用'
+
+2. 为什么要用 ssr 以及需要考虑的地方
+- ![为什么要用 ssr](../interview-note/image/20240708-why-need-ssr.png)
+- ![需要考虑的地方](../interview-note/image/20240708-ssr的权衡.png)
+
+### 最佳实践 - 性能优化
+1. 与 web 应用性能相关的两个方面
+- 官方文档：'页面加载性能：首次访问时，应用展示出内容与达到可交互状态的速度。这通常会用 Google 所定义的一系列 Web 指标 (Web Vitals) 来进行衡量，如最大内容绘制 (Largest Contentful Paint，缩写为 LCP) 和首次输入延迟 (First Input Delay，缩写为 FID)'
+- 官方文档：'更新性能：应用响应用户输入更新的速度。比如当用户在搜索框中输入时结果列表的更新速度，或者用户在一个单页面应用 (SPA) 中点击链接跳转页面时的切换速度'
+
+2. 如何减小打包产物体积
+- 包体积与 tree-shaking 优化
+- ![打包体积的优化](../interview-note/image/20240708-打包体积的优化.png)
+
+3. 代码分割
+- 官方文档：'代码分割是指构建工具将构建后的 JavaScript 包拆分为多个较小的，可以按需或并行加载的文件。通过适当的代码分割，页面加载时需要的功能可以立即下载，而额外的块只在需要时才加载，从而提高性能'
+- 将包拆分为较小的、按需引入的、并行加载的文件
+
+4. 更新优化
+```JavaScript
+// props 稳定性的优化
+<ListItem
+  v-for="item in list"
+  :id="item.id"
+  :active-id="activeId" />
+
+// 只有 item.id === activeId 时对应项才会更新
+<ListItem
+  v-for="item in list"
+  :id="item.id"
+  :active="item.id === activeId" />
+
+// 计算属性的稳定性
+const count = ref(0)
+const isEven = computed(() => count.value % 2 === 0)
+watchEffect(() => console.log(isEven.value)) // true
+// 这将不会触发新的输出，因为计算属性的值依然为 `true`
+count.value = 2
+count.value = 4
+
+// 计算属性需要返回对象的情况，因为对象是引用类型所以在实际使用值 isEven 没变化的时候可以返回 oldValue 即旧对象
+const computedObj = computed((oldValue) => {
+  const newValue = {
+    isEven: count.value % 2 === 0
+  }
+  if (oldValue && oldValue.isEven === newValue.isEven) {
+    return oldValue
+  }
+  return newValue
+})
+```
+
+5. 大型虚拟列表
+- 可以通过虚拟滚动来优化，如开源库：https://github.com/Akryum/vue-virtual-scroller
+
+### 最佳实践 - 无障碍访问
+1. 什么是无障碍访问
+- 官方文档：'Web 无障碍访问 (也称为 a11y) 是指创建可供任何人使用的网站的做法——无论是身患某种障碍、通过慢速的网络连接访问、使用老旧或损坏的硬件，还是仅处于某种不方便的环境。例如，在视频中添加字幕可以帮助失聪、有听力障碍或身处嘈杂环境而听不到手机的用户。同样地，确保文字样式没有处于太低的对比度，可以对低视力用户和在明亮的强光下使用手机的用户都有所帮助'
+
+2. 按级别顺序嵌套标题：<h1> - <h6>
+```JavaScript
+<main role="main" aria-labelledby="main-title">
+  <h1 id="main-title">Main title</h1>
+  <section aria-labelledby="section-title-1">
+    <h2 id="section-title-1"> Section Title </h2>
+    <h3>Section Subtitle</h3>
+    <!-- 内容 -->
+  </section>
+  <section aria-labelledby="section-title-2">
+    <h2 id="section-title-2"> Section Title </h2>
+    <h3>Section Subtitle</h3>
+    <!-- 内容 -->
+    <h3>Section Subtitle</h3>
+    <!-- 内容 -->
+  </section>
+</main>
+```
+
+### ts 和组合式 api
+1. lang='ts'
+```TypeScript
+// 内置 type
+<script setup lang="ts">
+interface Props {
+  foo: string
+  bar?: number
+}
+
+const props = defineProps<Props>()
+</script>
+
+// import type
+<script setup lang="ts">
+import type { Props } from './foo'
+
+const props = defineProps<Props>()
+</script>
+```
+
+2. props 解构默认值
+```TypeScript
+export interface Props {
+  msg?: string
+  labels?: string[]
+}
+
+// 通过 withDefaults 可以为 props 指定类型的同时赋予默认值
+const props = withDefaults(defineProps<Props>(), {
+  // 下述默认值中可以只指定 msg 或者 labels
+  msg: 'hello',
+  labels: () => ['one', 'two']
+})
+```
+
+3. 为 ref 标注类型
+```TypeScript
+import { ref } from 'vue'
+// import Ref type
+import type { Ref } from 'vue'
+const year: Ref<string | number> = ref('2020')
+year.value = 2020 // 成功！
+```
+
+4. 为 reactive 标注类型
+```TypeScript
+import { reactive } from 'vue'
+
+interface Book {
+  title: string
+  year?: number
+}
+
+const book: Book = reactive({ title: 'Vue 3 指引' })
+```
+
+5. 为 computed 标注类型
+```TypeScript
+const double = computed<number>(() => {
+  // 若返回值不是 number 类型则会报错
+})
+```
+
+6. 为事件处理函数标注类型
+```TypeScript
+function handleChange(event: Event) {
+  console.log((event.target as HTMLInputElement).value)
+}
+```
+
+7. 为 provide、inject 标注类型
+```TypeScript
+import { provide, inject } from 'vue'
+import type { InjectionKey } from 'vue'
+
+const key = Symbol() as InjectionKey<string>
+
+provide(key, 'foo') // 若提供的是非字符串值会导致错误
+
+// 显性声明类型为 string
+const foo = inject<string>('foo') // 类型：string | undefined
+```
+
+8. 为模版引用标注类型
+```TypeScript
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
+// type：HTMLInputElement | null
+// 默认是 null
+const el = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  el.value?.focus()
+})
+</script>
+
+<template>
+  <input ref="el" />
+</template>
+```
+
+9. 为组件模板引用标注类型
+```TypeScript
+// 子组件：MyModal.vue
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const isContentShown = ref(false)
+const open = () => (isContentShown.value = true)
+
+defineExpose({
+  open
+})
+</script>
+
+// 父组件 App.vue
+<script setup lang="ts">
+import MyModal from './MyModal.vue'
+
+// 对子组件 ref 标注类型
+const modal = ref<InstanceType<typeof MyModal> | null>(null)
+
+const openModal = () => {
+  // 利用可选链防止出错
+  modal.value?.open()
+}
+</script>
+```
+
+### 进阶主题 - 组合式 api（composition api）
+1. 为什么要有组合式 api
+- 官方文档：'更好的逻辑复用通过 hooks 等方式；如开源库 vueuse（https://vueuse.org/）'
+- 官方文档：'更灵活的代码组织（通过按需引入的方式）'
+- 官方文档：'更好的类型推导（对 ts 的支持程度更好）'
+
+### 进阶主题 - 深入响应式系统
+1. ref 和 reactive 的简单实现
+- 官网文档可以多看看：https://cn.vuejs.org/guide/extras/reactivity-in-depth.html
+- ref 是通过 getter、setter 实现的；reactive 是通过 proxy 来实现的
+```JavaScript
+// track 函数用于追踪依赖
+// 01 - 当在 reactive 或 ref 对象上访问某个属性时（即调用 get 时），会调用 track 函数。
+// 02 - track 函数记录当前的依赖关系，即哪个对象的哪个属性被哪个副作用（比如计算属性或渲染函数）使用。这是为了在属性变化时能通知到正确的副作用
+
+// trigger 函数用于通知变更
+// 01 - 当在 reactive 或 ref 对象上设置某个属性时（即调用 set 时），会调用 trigger 函数。
+// 02 - trigger 函数通知所有依赖于这个属性的副作用，让这些副作用重新运行。这是为了确保数据变化时界面或其他依赖数据的地方能够及时更新
+
+function reactive(obj) {
+  return new Proxy(obj, {
+    get(target, key) {
+      track(target, key)
+      return target[key]
+    },
+    set(target, key, value) {
+      target[key] = value
+      trigger(target, key)
+    }
+  })
+}
+
+function ref(value) {
+  const refObject = {
+    get value() {
+      track(refObject, 'value')
+      return value
+    },
+    set value(newValue) {
+      value = newValue
+      trigger(refObject, 'value')
+    }
+  }
+  return refObject
+}
+```
+
+2. getter、setter 和 proxy 的区别
+- ![getter 和 setter](../interview-note/image/20240708-getter-setter.png)
+- ![proxy](../interview-note/image/20240708-proxy.png)
+
+3. proxy 的更多功能
+```JavaScript
+// 01 - 拦截属性删除操作
+const handler = {
+  deleteProperty(target, prop) {
+    console.log(`Property ${prop} deleted`);
+    return delete target[prop];
+  }
+};
+
+const obj = new Proxy({}, handler);
+
+obj.a = 10;
+delete obj.a; // Property a deleted
+
+// 02 - 拦截方法调用
+const handler = {
+  apply(target, thisArg, argumentsList) {
+    console.log(`Called with arguments: ${argumentsList}`);
+    return target(...argumentsList);
+  }
+};
+
+const sum = new Proxy(function(a, b) {
+  return a + b;
+}, handler);
+
+console.log(sum(1, 2)); // Called with arguments: 1,2
+                        // 3
+
+// 03 - 拦截属性定义操作
+const handler = {
+  defineProperty(target, prop, descriptor) {
+    console.log(`Defining property ${prop}`);
+    return Reflect.defineProperty(target, prop, descriptor);
+  }
+};
+
+const obj = new Proxy({}, handler);
+
+Object.defineProperty(obj, 'a', {
+  value: 10,
+  writable: true
+}); // Defining property a
+
+// 04 - 拦截对象的原型操作
+const handler = {
+  getPrototypeOf(target) {
+    console.log('Getting prototype');
+    return Object.getPrototypeOf(target);
+  }
+};
+
+const obj = new Proxy({}, handler);
+
+Object.getPrototypeOf(obj); // Getting prototype
+```
+
+4. 计算属性调试
+- 官方文档：'onTrack 将在响应属性或引用作为依赖项被跟踪时被调用'
+- 官方文档：'onTrigger 将在侦听器回调被依赖项的变更触发时被调用'
+```JavaScript
+let count = ref(0)
+const doubleCount = computed(() => count.value * 2, {
+  // count、doubleCount 访问时触发
+  onTrack(e) {
+    console.log('1')
+    console.log(e)
+  },
+  // count 改变时触发
+  onTrigger(e) {
+    console.log('2')
+    console.log(e)
+  }
+})
+const onCountClick = (event) => {
+  count.value++
+}
+
+onMounted(() => {
+  console.log('doubleCount', doubleCount.value)
+})
+```
+
+### 进阶主题 - 渲染机制
+1. 提升虚拟 DOM 性能的方法之一静态提升
+- 官方文档：'静态提升：foo 和 bar 这两个 div 是完全静态的，没有必要在重新渲染时再次创建和比对它们。Vue 编译器自动地会提升这部分 vnode 创建函数到这个模板的渲染函数之外，并在每次渲染时都使用这份相同的 vnode，渲染器知道新旧 vnode 在这部分是完全相同的，所以会完全跳过对它们的差异比对'
+```JavaScript
+<div>
+  // foo、bar 在 diff 算法时其实没有被比较
+  <div>foo</div> <!-- 需提升 -->
+  <div>bar</div> <!-- 需提升 -->
+  <div>{{ dynamic }}</div>
+</div>
+```
+
+### 进阶主题 - 渲染函数和 jsx
+1. v-if 通过渲染函数和 jsx 实现
+```JavaScript
+// 模版语法
+<div>
+  <div v-if="ok">yes</div>
+  <span v-else>no</span>
+</div>
+
+// 渲染函数
+h('div', [ok.value ? h('div', 'yes') : h('span', 'no')])
+
+// jsx
+<div>{ok.value ? <div>yes</div> : <span>no</span>}</div>
+```
+
+2. v-for...
+```JavaScript
+// 模版语法
+<ul>
+  <li v-for="{ id, text } in items" :key="id">
+    {{ text }}
+  </li>
+</ul>
+
+// 渲染函数
+h(
+  'ul',
+  // assuming `items` is a ref with array value
+  items.value.map(({ id, text }) => {
+    return h('li', { key: id }, text)
+  })
+)
+
+// jsx
+<ul>
+  {items.value.map(({ id, text }) => {
+    return <li key={id}>{text}</li>
+  })}
+</ul>
+```
+
+### 进阶主题 - 动画技巧
+1. 基于 css 的动画（transform、animation、keyframes）
+```JavaScript
+// js 逻辑
+const disabled = ref(false)
+
+function warnDisabled() {
+  disabled.value = true
+  setTimeout(() => {
+    disabled.value = false
+  }, 1500)
+}
+
+// dom
+// 其实也可以理解为基于状态的动画，disabled 状态变化时对应动画发生变化
+<div :class="{ shake: disabled }">
+  <button @click="warnDisabled">Click me</button>
+  <span v-if="disabled">This feature is disabled!</span>
+</div>
+
+// css
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+}
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+```
+
+2. 基于监听器的动画
+```JavaScript
+import { ref, reactive, watch } from 'vue'
+import gsap from 'gsap'
+const number = ref(0)
+const tweened = reactive({
+  number: 0
+})
+watch(number, (n) => {
+  // gsap 第三方开源动画库
+  gsap.to(tweened, { duration: 0.5, number: Number(n) || 0 })
+})
+
+Type a number: <input v-model.number="number" />
+<p>{{ tweened.number.toFixed(0) }}</p>
+```
+
+### others
+1. 根据传入项快速删除数据中的某一项
+```JavaScript
+// indexOf() 查找全等的项
+function removeTodo(todo) {
+  todos.value.splice(todos.value.indexOf(todo), 1)
+}
+```
+
+2. readonly、shallowReadonly
+- shallowReadonly 是浅层只读，除了不能更换顶层的数据其它层的数据变化都没问题
+- readonly 是深层只读
 
