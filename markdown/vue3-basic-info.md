@@ -821,6 +821,50 @@ const object = { id: ref(1) }
 9. shallowRef 和 shallowReactive
 - 官方文档：'Vue 确实也为此提供了一种解决方案，通过使用 shallowRef() 和 shallowReactive() 来绕开深度响应。浅层式 API 创建的状态只在其顶层是响应式的，对所有深层的对象不会做任何处理。这使得对深层级属性的访问变得更快，但代价是，我们现在必须将所有深层级对象视为不可变的，并且只能通过替换整个根状态来触发更新'
 
+- shallowRef 触发响应式在于改变其顶层数据结构（即重置自身等操作）
+```JavaScript
+// 顶层数据结构是整个对象 { count: 1 }
+const state = shallowRef({ count: 1 });
+
+// 替换整个对象，触发响应
+state.value = { count: 2 }; // 触发响应
+
+// 修改对象内部的属性，不触发响应
+state.value.count = 2; // 不触发响应
+```
+
+- shallowReactive 触发响应在于改变其顶层数据结构（自身）或者改变顶层数据结构包裹的东西
+```JavaScript
+const state = shallowReactive([
+  { id: 1, value: 'a' },
+  { id: 2, value: 'b' }
+]);
+
+// 改变顶层数据结构自身
+// 替换整个数组，触发响应
+state = [ { id: 3, value: 'c' } ]; // 触发响应
+
+// 改变顶层数据结构包裹的东西
+// 修改数组顶层元素，触发响应
+state[0] = { id: 4, value: 'd' }; // 触发响应
+
+// 修改数组顶层的属性，触发响应
+state.length = 1; // 触发响应
+
+// state[0].value 不是顶层了
+// 修改数组内部对象的属性，不触发响应
+state[0].value = 'e'; // 不触发响应
+
+// 对数组进行 push 操作，触发响应
+state.push({ id: 5, value: 'f' }); // 触发响应
+
+// 对数组进行 pop 操作，触发响应
+state.pop(); // 触发响应
+
+// 对数组进行 splice 操作，触发响应
+state.splice(1, 1); // 触发响应
+```
+
 10. reactive 的局限性
 - 官方文档：'有限的值类型：它只能用于对象类型 (对象、数组和如 Map、Set 这样的集合类型)。它不能持有如 string、number 或 boolean 这样的原始类型；如果要应用于原始类型的话需要通过 {} 包一层'
 - 官方文档：'对解构操作不友好：当我们将响应式对象的原始类型属性解构为本地变量时，或者将该属性传递给函数时，我们将丢失响应性连接'
@@ -1908,3 +1952,151 @@ function removeTodo(todo) {
 - shallowReadonly 是浅层只读，除了不能更换顶层的数据其它层的数据变化都没问题
 - readonly 是深层只读
 
+3. 防抖 ref
+- 官方文档：'创建一个防抖 ref，即只在最近一次 set 调用后的一段固定间隔后再调用'
+```JavaScript
+import { customRef } from 'vue'
+
+export function useDebouncedRef(value, delay = 200) {
+  let timeout
+  return customRef((track, trigger) => {
+    // 需要返回一个 get、set 的对象
+    return {
+      get() {
+        // 监听依赖
+        track()
+        return value
+      },
+      set(newValue) {
+        // 清楚 delay 时间短内重复触发的定时器
+        clearTimeout(timeout)
+        timeout = setTimeout(() => {
+          value = newValue
+          // 通知依赖更新
+          trigger()
+        }, delay)
+      }
+    }
+  })
+}
+
+<script setup>
+import { useDebouncedRef } from './debouncedRef'
+const text = useDebouncedRef('hello', 1000)
+</script>
+
+<template>
+  // text 的值会在 1000ms 后才会更新（是一种防抖处理）
+  <input v-model="text" />
+</template>
+```
+
+4. toRaw
+- 官方文档：'根据一个 Vue 创建的代理（代理可以是由 reactive、shallowReactive、readonly、shallowReadonly 包裹创建的数据）返回其原始对象'
+```JavaScript
+const foo = {}
+const reactiveFoo = reactive(foo)
+
+console.log(toRaw(reactiveFoo) === foo) // true
+```
+
+5. onUnmounted
+- 一个组件在什么情况下被视为已卸载
+  - 官方文档：'其所有子组件都已经被卸载'
+  - 官方文档：'所有相关的响应式作用 (渲染作用以及 setup() 时创建的计算属性和侦听器) 都已经停止'
+
+- 在该生命周期下可以做什么
+  - 官方文档：'可以在这个钩子中手动清理一些副作用，例如计时器、DOM 事件监听器或者与服务器的连接'
+
+- 为什么需要手动清理定时器、DOM 事件监听器等？
+ - 官方文档：'组件销毁并不自动清理所有资源'
+ - 官方文档：'当一个组件被销毁时，Vue 仅会销毁与该组件相关的 Vue 实例、模板和响应式数据。但是，Vue 并不会自动清理在组件生命周期中创建的所有外部资源，如计时器、DOM 事件监听器、服务器连接等'
+ - 即使定时器或者监听器引用了响应式数据，在 Vue 组件实例销毁时对应的定时器、监听器还是会存在
+ - 官方文档：'未清理的话会造成如内存泄漏、未清楚的定时器访问组件实例已经被销毁的数据导致错误等问题'
+
+- 组件销毁时 Vue 到底做了什么？
+  - 官方文档：'卸载子组件：如果一个组件有子组件，Vue 会先销毁所有子组件'
+  - 官方文档：'解绑指令：Vue 会调用所有指令的 unbind 钩子，以便这些指令有机会清理资源'
+  - 官方文档：'销毁实例：Vue 会调用所有指令的 unbind 钩子，以便这些指令有机会清理资源'
+  - 官方文档：'移除 DOM：最后，Vue 会将组件的 DOM 节点从 DOM 树中移除'
+
+```JavaScript
+<script setup>
+import { ref, onUnmounted } from 'vue';
+
+const count = ref(0);
+
+// 创建一个定时器，每秒递增 count
+const timer = setInterval(() => {
+  count.value++;
+}, 1000);
+
+// 创建一个窗口的 resize 事件监听器
+const onResize = () => {
+  console.log('Window resized');
+};
+window.addEventListener('resize', onResize);
+
+onUnmounted(() => {
+  // 清理定时器
+  clearInterval(timer);
+  // 清理事件监听器
+  window.removeEventListener('resize', onResize);
+});
+</script>
+
+<template>
+  <div>
+    <p>Count: {{ count }}</p>
+  </div>
+</template>
+```
+
+6. onBeforeMount
+- 该生命周期钩子中除了不能对 DOM 进行操作外，其它的比如初始化数据、更改数据、调用组件实例化上的一些方法、调用 api 等都是可以的
+
+7. provide 和 inject
+- inject 的参数
+  - 官方文档：'第一个参数是注入的 key。Vue 会遍历父组件链，通过匹配 key 来确定所提供的值。如果父组件链上**多个组件对同一个 key 提供了值**，那么离得更近的组件将会“覆盖”链上更远的组件所提供的值。**如果没有能通过 key 匹配到值，inject() 将返回 undefined，除非提供了一个默认值**'
+  - 官方文档：'第二个参数是可选的，即在没有匹配到 key 时使用的**默认值**'
+  - 官方文档：'第二个参数也可以是一个工厂函数，用来返回某些创建起来比较复杂的值。在这种情况下，你必须将 true 作为第三个参数传入，表明这个函数将作为工厂函数使用，而非值本身'
+```JavaScript
+<script setup>
+import { ref, provide } from 'vue'
+import { countSymbol } from './injectionSymbols'
+
+// 提供静态值
+provide('path', '/project/')
+
+// 提供响应式的值
+const count = ref(0)
+provide('count', count)
+
+// 提供时将 Symbol 作为 key
+provide(countSymbol, count)
+</script>
+
+// inject
+<script setup>
+import { inject } from 'vue'
+import { countSymbol } from './injectionSymbols'
+
+// 注入不含默认值的静态值
+const path = inject('path')
+
+// 注入响应式的值
+const count = inject('count')
+
+// 通过 Symbol 类型的 key 注入
+const count2 = inject(countSymbol)
+
+// 注入一个值，若为空则使用提供的默认值
+const bar = inject('path', '/default-path')
+
+// 注入一个值，若为空则使用提供的函数类型的默认值
+const fn = inject('function', () => {})
+
+// 注入一个值，若为空则使用提供的工厂函数
+const baz = inject('factory', () => new ExpensiveObject(), true)
+</script>
+```
