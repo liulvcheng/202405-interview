@@ -855,5 +855,5 @@ let arr = [
 console.log(JSON.stringify(arrayToTree(arr), null, 2))
 ```
 
-
-
+### Object.create 和 new 操作符
+1. new 操作符构建对象实例时可以传递参数，对于子类可以和父类不一样；create 可以指定新对象实例的父类为某个原始对象，不可以传递参数，但相对于 new 来说更加灵活

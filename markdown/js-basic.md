@@ -1202,3 +1202,29 @@ console.log(two.next().value) // b
 console.log(two.next().value) // b
 console.log(two.next().value) // undefined
 ```
+
+10. Array.prototype.entries 和 Object.prototype.entries
+```JavaScript
+// Array
+// 返回的是类数组对象（Array 迭代器对象），可以通过 Array.from 或者 ... 展开运算符来转为数组
+// 不转换
+let arr = [10, 20, 30];
+let iterator = arr.entries();
+console.log(iterator.next().value); // [0, 10]
+console.log(iterator.next().value); // [1, 20]
+console.log(iterator.next().value); // [2, 30]
+
+// 转换后
+let arr = [10, 20, 30];
+let entriesArray = Array.from(arr.entries());
+console.log(entriesArray);
+// 输出: [ [0, 10], [1, 20], [2, 30] ]
+
+// object
+// 返回的是数组，包括 keys、values 等方法
+let arr = [10, 20, 30];
+let entriesArray = [...arr.entries()];
+
+console.log(entriesArray);
+// 输出: [ [0, 10], [1, 20], [2, 30] ]
+```
