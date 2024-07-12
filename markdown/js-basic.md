@@ -1217,14 +1217,8 @@ console.log(iterator.next().value); // [2, 30]
 // 转换后
 let arr = [10, 20, 30];
 let entriesArray = Array.from(arr.entries());
-console.log(entriesArray);
-// 输出: [ [0, 10], [1, 20], [2, 30] ]
-
-// object
-// 返回的是数组，包括 keys、values 等方法
-let arr = [10, 20, 30];
+// or
 let entriesArray = [...arr.entries()];
-
 console.log(entriesArray);
 // 输出: [ [0, 10], [1, 20], [2, 30] ]
 ```
