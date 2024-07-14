@@ -857,3 +857,245 @@ console.log(JSON.stringify(arrayToTree(arr), null, 2))
 
 ### Object.create 和 new 操作符
 1. new 操作符构建对象实例时可以传递参数，对于子类可以和父类不一样；create 可以指定新对象实例的父类为某个原始对象，不可以传递参数，但相对于 new 来说更加灵活
+
+### 业务代码中的 ts 小技巧
+1. link：https://juejin.cn/post/7389651690306420777
+
+2. 使用 never 类型检查 switch case 语句
+- 适用于 switch - case 和 if - else 的情况
+```TypeScript
+declare enum Color {
+  Red,
+  Yellow,
+  Blue,
+  Pink,
+}
+
+declare let color: Color;
+
+switch (color) {
+  case Color.Red:
+    // do something
+    break;
+
+  case Color.Yellow:
+    // do something
+    break;
+
+  case Color.Blue:
+    // do something
+    break;
+
+  default:
+    // 不能将类型 Color 分配给类型 never
+    // 对于枚举类型在实际业务中后续维护中可能会添加更多的枚举值，通过将 color（除开现有枚举值 default 中默认取值是 never 类型的情况） 赋值给 never 类型可以在编译阶段就发现赋值错误（只有 never 类型才能赋值给 never 类型）
+    let exhaustiveCheck: never = color;
+    break;
+}
+```
+
+3. 模板字符串类型的排列组合
+```TypeScript
+type Software = 'WeChat' | 'AliPay' | 'LOLM';
+type Platform = 'Android' | 'iOS' | 'HarmonyOS';
+type VersionTag = 'debug' | 'stable' | 'nightly';
+
+// 3 * 3 * 3 = 27 种排列组合
+type Products = `${Software}-${Platform}-${VersionTag}`
+```
+
+4. 使用重映射快速修改接口
+```TypeScript
+interface User {
+  name: string;
+  age: number;
+  job: string;
+}
+
+// 快速将上述 key 的接口转换为下述 key 不同的接口
+// {
+//   updatedName: string;
+//   updatedAge: number;
+//   updatedJob: string;
+// }
+type UpdatedUser = {
+  [K in keyof User as `updated${Capitalize<K>}`]: User[K];
+};
+
+// 公式
+// linbudu：'Capitalize 工具类型，随模板字符串类型一同引入的内置工具类型，功能是将此字符串类型的首字母大写'
+// linbudu：'K & string，通过交叉类型的结果同时满足其类型成员的定义，确保类型符合 Capitalize 的泛型类型约束'
+type DerivedStruct<Struct extends object> = {
+  [K in keyof Struct as `updated${Capitalize<K & string>}`]: Struct[K];
+};
+type UpdatedUser2 = DerivedStruct<User>;
+
+// 同上述改变，但只有原有 interface 中的部分字段需要转换
+// 通过拆分 interface 来实现
+interface UserDetail {} // UserDetail 中是需要转换 key 的
+interface UserRelation {}
+interface UserLevel {}
+
+interface User extends UserDetail, UserRelation, UserLevel {}
+
+interface UpdatedUser
+  extends DerivedStruct<UserDetail>, // 只对 UserDetail 进行 key 转换
+    UserRelation,
+    UserLevel {}
+```
+
+5. interface 同时继承多个 interface
+```TypeScript
+interface Animal {
+  name: string;
+}
+
+interface Mammal {
+  hasFur: boolean;
+}
+
+interface Bird {
+  canFly: boolean;
+}
+
+// MyPet 接口同时继承了 Animal, Mammal 和 Bird
+// 将需要继承的 interface 用逗号分隔
+interface MyPet extends Animal, Mammal, Bird {
+  breed: string;
+}
+
+const pet: MyPet = {
+  name: 'Buddy',
+  hasFur: true,
+  canFly: false,
+  breed: 'Golden Retriever',
+};
+```
+
+6. 提取类型
+```TypeScript
+// 01 - 提取数组、元组类型的元素类型
+type ArrayElementType<T extends any[]> = T extends (infer U)[] ? U : never;
+
+type UserList = Array<{
+  id: number;
+  name: string;
+  age: number;
+}>;
+
+// {
+//   id: number;
+//   name: string;
+//   age: number;
+// }
+type User = ArrayElementType<UserList>;
+
+// 02 - 提取 Promise 的值类型
+type QueryUserResponse = Promise<{
+  id: string;
+  name: string;
+  email: string;
+}>;
+
+// {
+//   id: string;
+//   name: string;
+//   email: string;
+// }
+// Awaited 是内置工具类型，可以用于提取一个 Promise resolve 的值类型
+type User = Awaited<QueryUserResponse>;
+
+// 03 - 提取入参类型和返回值类型
+// Parameters、ReturnType 都是内置类型
+interface User {}
+
+interface UpdatedUser extends User {}
+
+// 仅导出了函数（传参类型是 User，返回值类型是 UpdatedUser）
+export function updateUser(input: User): UpdatedUser {}
+
+// User
+// 后面可通过数组的方式取指定参数的类型，不加 [0] 表示所有参数的类型
+type InputUser = Parameters<typeof updateUser>[0]; // 首参数
+type InputUser = Parameters<typeof updateUser>; // 所有参数
+
+// UpdatedUser
+type OutputUser = ReturnType<typeof updateUser>;
+```
+
+### antd 开源项目成员 learning note
+1. link：https://juejin.cn/post/7107500406430760991#heading-52
+
+2. 隐藏元素（display: none;、visibility: hidden;、opacity: 0;）的区别
+- ![隐藏元素对比](../interview-note/image/20240713-隐藏元素对比.png)
+```JavaScript
+<div
+  class="box"
+  @click="
+    () => {
+      console.log('1')
+    }
+  "
+>
+  {/* 盒模型消失；不占据空间；交互没效果 */}
+  111
+</div>
+<div
+  class="box"
+  @click="
+    () => {
+      console.log('2')
+    }
+  "
+>
+  {/* 盒模型不消失；占据空间；交互没效果 */}
+  222
+</div>
+<div
+  class="box three"
+  @click="
+    () => {
+      console.log('3')
+    }
+  "
+>
+  {/* 盒模型不消失；占据空间；交互有效果 */}
+  333
+</div>
+
+.box {
+  outline: 1px solid #000;
+  padding: 10px;
+  margin: 10px 0;
+  width: 100px;
+  height: 100px;
+}
+.one {
+  display: none;
+}
+.two {
+  visibility: hidden;
+}
+.three {
+  opacity: 0;
+}
+```
+
+3. console 输出值
+```JavaScript
+console.log('1', 11) // 11
+console.log('2', .11) // 0.11（允许省去 0）
+console.log('3', 11e2) // 1100
+```
+
+4. 打印顺序
+- lijianan：'js 在对对象的 key 进行遍历（for...in、Object.keys、Object.values、Object.entries 等）的时候，会先判断 key 的类型，如果是 number 类型，则会放在前面，并且进行排序，如果是 string 类型，则放在后面，不进行排序（对 number 排序是为了方便内存寻址，string 不能进行四则运算，所以排序没有意义）'
+- GPT 内存寻址的作用：'优化性能：数值型键在内存中按照顺序排列，可以通过简单的算术运算直接访问对应的内存地址，这样可以提高访问效率（比如对象都是数字键的情况下访问对象的某个键的值可以通过前一个键的具体偏移来实现，如 obj[2] 相对于 obj[0] 的偏移）'
+```JavaScript
+const object = { a2: '', 2: '', 1: '', a1: '' };
+console.log(Object.keys(object)) // [ '1', '2', 'a2', 'a1' ]
+
+for (const key in object) {
+  console.log(key); // 1 2 a2 a1
+}
+```

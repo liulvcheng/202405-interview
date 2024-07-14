@@ -642,6 +642,9 @@ defineExpose({
 </script>
 ```
 
+5. expose 的好处
+- GPT：'默认情况下，当通过 $parent、$root 或模板引用访问时，组件实例将向父组件暴露所有的实例属性。这可能不是我们希望看到的，因为组件很可能拥有一些应保持私有的内部状态或方法，以避免紧耦合（简单来说不想将子组件的所有东西都暴露出去，而只暴露我们允许的）'
+
 ### hooks 封装
 1. useMouse hook 封装（最简单的情况这是
 ```JavaScript
@@ -2060,6 +2063,7 @@ onUnmounted(() => {
   - 官方文档：'第一个参数是注入的 key。Vue 会遍历父组件链，通过匹配 key 来确定所提供的值。如果父组件链上**多个组件对同一个 key 提供了值**，那么离得更近的组件将会“覆盖”链上更远的组件所提供的值。**如果没有能通过 key 匹配到值，inject() 将返回 undefined，除非提供了一个默认值**'
   - 官方文档：'第二个参数是可选的，即在没有匹配到 key 时使用的**默认值**'
   - 官方文档：'第二个参数也可以是一个工厂函数，用来返回某些创建起来比较复杂的值。在这种情况下，你必须将 true 作为第三个参数传入，表明这个函数将作为工厂函数使用，而非值本身'
+- 由于子组件 inject 的值可能对应多个父组件 provide 的同名值，所有可能会造成子组件取值错误（或许可以添加 from 这样的配置属性来指定是哪个父组件 provide 的）
 ```JavaScript
 <script setup>
 import { ref, provide } from 'vue'
@@ -2091,6 +2095,7 @@ const count = inject('count')
 const count2 = inject(countSymbol)
 
 // 注入一个值，若为空则使用提供的默认值
+// 显性设置默认值
 const bar = inject('path', '/default-path')
 
 // 注入一个值，若为空则使用提供的函数类型的默认值
@@ -2100,3 +2105,104 @@ const fn = inject('function', () => {})
 const baz = inject('factory', () => new ExpensiveObject(), true)
 </script>
 ```
+
+8. vue2 组件实例
+- $data
+- $props
+- $el（直到组件挂载之前「mounted 生命周期之前」都会是 undefiend）
+  - 官方文档：'对于单一根元素的组件，$el 将会指向该根元素'
+  - 官方文档：'对于以文本节点为根的组件，$el 将会指向该文本节点'
+  - 官方文档：'对于以多个元素为根的组件，$el 将是一个仅作占位符的 DOM 节点，Vue 使用它来跟踪组件在 DOM 中的位置 (文本节点或 SSR 激活模式下的注释节点)'
+- $parent（当前组件可能存在的父组件实例，如果当前组件是顶层组件，则为 null）
+```JavaScript
+// 下述直接访问或操作 $parent、$root 的方式会增加代码间的耦合度和复杂性，建议通过单向数据流来替换实现
+
+// 子组件
+<template>
+  <div>
+    <p>Child Component</p>
+    <button @click="accessParent">Access Parent Data</button>
+    <button @click="accessRoot">Access Root Data</button>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'ChildComponent',
+  methods: {
+    // 访问父组件实例
+    accessParent() {
+      console.log(this.$parent.parentData); // Access parent's data
+      this.$parent.parentMethod(); // Call parent's method
+    },
+    // 访问根组件实例
+    accessRoot() {
+      console.log(this.$root.rootData); // Access root's data
+      this.$root.rootMethod(); // Call root's method
+    }
+  }
+};
+</script>
+
+// 父组件
+<template>
+  <div>
+    <p>Parent Component</p>
+    <child-component></child-component>
+  </div>
+</template>
+
+<script>
+import ChildComponent from './ChildComponent.vue';
+
+export default {
+  name: 'ParentComponent',
+  components: {
+    ChildComponent
+  },
+  data() {
+    return {
+      parentData: 'Data from Parent'
+    };
+  },
+  methods: {
+    parentMethod() {
+      console.log('Method from Parent');
+    }
+  }
+};
+</script>
+
+// 根组件
+<template>
+  <div>
+    <p>Root Component</p>
+    <parent-component></parent-component>
+  </div>
+</template>
+
+<script>
+import ParentComponent from './ParentComponent.vue';
+
+export default {
+  name: 'RootComponent',
+  components: {
+    ParentComponent
+  },
+  data() {
+    return {
+      rootData: 'Data from Root'
+    };
+  },
+  methods: {
+    rootMethod() {
+      console.log('Method from Root');
+    }
+  }
+};
+</script>
+```
+- $root（当前组件树的根组件实例。如果当前实例没有父组件，那么这个值就是它自己）
+- $attrs（包含了组件所有透传 attributes 的对象）
+- $emit
+- $nextTick
