@@ -1099,3 +1099,351 @@ for (const key in object) {
   console.log(key); // 1 2 a2 a1
 }
 ```
+
+5. 交换两个变量的位置（不创建新变量的情况下）
+```JavaScript
+// 01 加法（存在精度问题，如 0.1 和 0.2）
+let [a, b] = [1, 2]
+console.log('here 1', a, b) // here 1 1 2
+// 01 加法
+// a = a + b
+// b = a - b
+// a = a - b
+
+// 02 解构
+// [a, b] = [b, a];
+console.log('here 2', a, b) // here 1 2 1
+
+// 03 乘法（需要处理 0 的问题和上述加法精度的问题）
+// a = a * b
+// b = a / b
+// a = a / b
+console.log('here 3', a, b) // here 3 2 1
+```
+
+6. 实现深拷贝的方法
+- linjianana：'JSON.parse(JSON.stringify())'
+- linjianana：'lodash deepClone'
+```JavaScript
+// 深拷贝 01（适用于对象、数组、基本类型等情况）
+import { cloneDeep } from 'lodash';
+const newData = cloneDeep(data);
+```
+- linjianana：'structuredClone js 自带 api，兼容性比较差'
+- linjianana：手动实现 deepClone
+```JavaScript
+function cloneDeep(value) {
+  const map = new Map()
+
+  function _cloneDeep(value) {
+    // 注意 typeof null === 'object'
+    const isObject = typeof value === 'object' && value !== null
+
+    // 递归退出条件
+    if (!isObject) return value
+
+    if (map.has(value)) {
+      return map.get(value)
+    }
+
+    const clone = Array.isArray(value) ? [] : {}
+    for (const [key, val] of Object.entries(value)) {
+      // 递归处理
+      clone[key] = _cloneDeep(val)
+    }
+    map.set(value, clone)
+    return clone
+  }
+
+  return _cloneDeep(value)
+}
+const testDataOne = cloneDeep({
+  name: 'name',
+  value: { name: 'name 01', value: { name: 'name 02', value: 'value' } },
+})
+const testDataTwo = cloneDeep(111)
+const testDataThree = cloneDeep([1, 2, 3, [4, 5, [6, 7]]])
+console.log('testDataOne', testDataOne)
+console.log('testDataTwo', testDataTwo)
+console.log('testDataThree', testDataThree)
+
+// 深拷贝 02（适用于数组、对象）
+const deepClone = (obj) => {
+  // 对于每一项判断是 Array 还是 Object
+  const ans = Array.isArray(obj) ? [] : {}
+  for (const key in obj) {
+    // 排除掉 obj 原型上继承的属性
+    if (obj.hasOwnProperty(key)) {
+      // 如果 key 对应的 value 是对象类型，即 Array 或者 Object 的话递归处理
+      ans[key] =
+        obj[key] && typeof obj[key] === 'object'
+          ? deepClone(obj[key])
+          : obj[key]
+    }
+  }
+  return ans
+}
+
+// 深拷贝 03（适配对象、数组、基本类型、日期对象、正则表达式等）
+function isObject(value) {
+  // 排除掉 null
+  return value && typeof value === 'object'
+}
+
+function deepClone(obj, map = new WeakMap()) {
+  // 处理基础类型和 null、undefined
+  if (!isObject(obj)) {
+    return obj
+  }
+
+  // 检查循环引用
+  if (map.has(obj)) {
+    return map.get(obj)
+  }
+
+  // 获取对象类型
+  const type = Object.prototype.toString.call(obj)
+
+  // 初始化拷贝对象
+  let copy
+  switch (type) {
+    case '[object Date]':
+      copy = new Date(obj.getTime())
+      break
+    case '[object RegExp]':
+      copy = new RegExp(obj)
+      break
+    case '[object Array]':
+      copy = []
+      map.set(obj, copy)
+      obj.forEach((element, index) => {
+        copy[index] = isObject(element) ? deepClone(element, map) : element
+      })
+      break
+    case '[object Object]':
+      copy = {}
+      map.set(obj, copy)
+      Object.keys(obj).forEach((key) => {
+        const value = obj[key]
+        copy[key] = isObject(value) ? deepClone(value, map) : value
+      })
+      break
+    default:
+      throw new Error(`Unsupported type: ${type}`)
+  }
+  return copy
+}
+console.log('1', deepClone(1))
+console.log('2', deepClone(null))
+console.log('3', deepClone(undefined))
+console.log('4', deepClone([1, 2, 3]))
+console.log('5', deepClone({ name: 'liu', age: 999 }))
+console.log('6', deepClone([1, [2, [3]]]))
+console.log('7', deepClone({ name: 'liu', age: { sex: 'male' } }))
+console.log(
+  '8',
+  deepClone({ a: 1, b: { c: 2, d: [3, 4, 5] }, e: new Date(), f: /abc/g })
+)
+```
+
+7. in 操作符
+```JavaScript
+let obj = { name: 'liu', age: 999 }
+let arr = [1, 2, 3]
+
+// for...in
+for (const key in obj) {
+  console.log(key, obj[key]) // name 'liu' / age 999
+}
+for (const key in arr) {
+  console.log(key, arr[key]) // 0 1 / 1 2 / 2 3
+}
+
+// for...of
+for (const [key, value] of Object.entries(obj)) {
+  console.log(key, value) // name 'liu' / age 999
+}
+for (const [key, value] of Object.entries(arr)) {
+  console.log(key, value) // 0 1 / 1 2 / 2 3
+}
+// arr.entries() 返回的是迭代器对象（类数组）可以通过 for...of 遍历或者使用 Array.form 或者 ... 转换后再遍历
+for (const [key, value] of arr.entries()) {
+  console.log(key, value) // 0 1 / 1 2 / 2 3
+}
+```
+
+### axios 比较 fetch
+1. link：https://blog.logrocket.com/axios-vs-fetch-best-http-requests/
+
+2. 基本用法
+- post 发送数据时，axios 使用 data 字段，fetch 使用 body 字段
+- axios 中的 data 字段会自动转 JSON，fetch 需要手动调用 JSON.stringify
+- 同上，axios 返回的 response 会自动转换，fetch 需手动调用 response.json
+```JavaScript
+const url = 'https://jsonplaceholder.typicode.com/posts'
+// axios
+const data = {
+  a: 10,
+  b: 20,
+}
+axios
+  .post(url, data, {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json;charset=UTF-8',
+    },
+  })
+  .then(({ data }) => {
+    console.log(data)
+  })
+
+// fetch()
+const options = {
+  method: 'POST',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json;charset=UTF-8',
+  },
+  body: JSON.stringify({
+    a: 10,
+    b: 20,
+  }),
+}
+fetch(url, options)
+  .then((response) => response.json())
+  .then((data) => {
+    console.log(data)
+  })
+```
+
+3. 兼容性
+- axios 底层通过 xhr 实现，因此兼容性会好于 fetch
+
+4. 响应超时设置
+```JavaScript
+// axios 配置 timeout
+axios({
+  method: 'post',
+  url: '/login',
+  timeout: 4000,    // 4 seconds timeout
+  data: {
+    firstName: 'David',
+    lastName: 'Pollock'
+  }
+})
+.then(response => {/* handle the response */})
+.catch(error => console.error('timeout exceeded'))
+
+// fetch 通过配置 AbortController
+const controller = new AbortController();
+const options = {
+  method: 'POST',
+  signal: controller.signal,
+  body: JSON.stringify({
+    firstName: 'David',
+    lastName: 'Pollock'
+  })
+};  
+const promise = fetch('/login', options);
+const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+promise
+  .then(response => {
+    clearTimeout(timeoutId); // 请求成功后清除定时器
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json(); // 解析响应数据为 JSON
+  })
+  .then(data => {
+    console.log('Request succeeded with JSON response', data);
+    // 处理成功响应的数据
+  })
+  .catch(error => {
+    if (error.name === 'AbortError') {
+      console.error('Request was aborted due to timeout');
+      // 处理请求超时的情况
+    } else {
+      console.error('Fetch error:', error);
+      // 处理其他类型的错误
+    }
+  });
+
+// fetch 通过 Promise.race 来实现（上述有）
+```
+
+5. 拦截器
+```JavaScript
+// axios 可以对 request、response 进行拦截处理
+// 作用在于可对 request 做统一的配置处理，对 response 做统一的拦截处理（超时重试、失败重试等情况）
+axios.interceptors.request.use()
+axios.interceptors.response.use()
+```
+
+6. 下载进度
+- 原文：'axios 使用进度条模块'
+- 原文：'fetch 通过 ReadableStream 来手动计算下载进度'
+- 具体实现看 link 原文
+
+7. 同时请求
+```JavaScript
+// axios：axios.all、axios.spread
+axios.all([
+  axios.get('https://api.github.com/users/iliakan'), 
+  axios.get('https://api.github.com/users/taylorotwell')
+])
+.then(axios.spread((obj1, obj2) => {
+  // Both requests are now complete
+  console.log(obj1.data.login + ' has ' + obj1.data.public_repos + ' public repos on GitHub');
+  console.log(obj2.data.login + ' has ' + obj2.data.public_repos + ' public repos on GitHub');
+}));
+
+// fetch：Promise.all + async - await
+Promise.all([
+  fetch('https://api.github.com/users/iliakan'),
+  fetch('https://api.github.com/users/taylorotwell')
+])
+.then(async([res1, res2]) => {
+  const a = await res1.json();
+  const b = await res2.json();
+  console.log(a.login + ' has ' + a.public_repos + ' public repos on GitHub');
+  console.log(b.login + ' has ' + b.public_repos + ' public repos on GitHub');
+})
+.catch(error => {
+  console.log(error);
+});
+```
+
+8. 错误处理
+```JavaScript
+// fetch
+try {
+  const res = await fetch('...');
+
+  if (!res.ok) {
+    // Error on the response (5xx, 4xx)
+    switch (res.status) {
+      case 400: /* Handle */ break;
+      case 401: /* Handle */ break;
+      case 404: /* Handle */ break;
+      case 500: /* Handle */ break;
+    }
+  }
+
+  // Here the response can be properly handled
+} catch (err) {
+    // Error on the request (Network error)
+}
+
+// axios
+try {
+  let res = await axios.get('...');
+  // Here the response can be properly handled
+} catch (err) {
+  if (err.response) {
+    // Error on the response (5xx, 4xx)
+  } else if (err.request) {
+    // Error on the request (Network error)
+  }
+}
+```

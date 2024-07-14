@@ -155,7 +155,165 @@ function fetchVideo() {
       console.error(`下载错误：${err.message}`)
     })
 }
+```
 
+1. fetch 的用法
+```JavaScript
+// 原始
+fetch('https://api.github.com/users/ruanyf')
+  .then(response => {
+    const { ok, status, statusText } = response
+    // 这几个状态是 fetch 自带的，需要与业务系统（业务系统中可能存在同样的字段，但会是在 response.json() 处理后）中的区分开
+    console.log(ok, status, statusText)
+    return response.json()
+  })
+  .then(json => console.log(json))
+  .catch(err => console.log('Request Failed', err)); 
+
+// 使用 async - await 改写
+async function getJSON() {
+  let url = 'https://api.github.com/users/ruanyf';
+  try {
+    let response = await fetch(url);
+    return await response.json();
+  } catch (error) {
+    console.log('Request Failed', error);
+  }
+}
+```
+
+2. 判断 fetch 请求是否成功
+```JavaScript
+// 通过 response 上的 ok、status 来判断
+async function fetchText() {
+  let response = await fetch('/readme.txt');
+
+  // status
+  if (response.status >= 200 && response.status < 300) {
+    return await response.text();
+  } else {
+    throw new Error(response.statusText);
+  }
+
+  // ok
+  if (response.ok) {
+    // 请求成功
+  } else {
+    // 请求失败
+  }
+}
+```
+
+3. 读取内容的方法
+- 阮一峰：'response.text()：得到文本字符串'
+- 阮一峰：'response.json()：得到 JSON 对象'
+- 阮一峰：'response.blob()：得到二进制 Blob 对象'
+- 阮一峰：'response.formData()：得到 FormData 表单对象'
+- 阮一峰：'response.arrayBuffer()：得到二进制 ArrayBuffer 对象'
+- 阮一峰：'上面5个读取方法都是异步的，返回的都是 Promise 对象。必须等到异步操作结束，才能得到服务器返回的完整数据'
+
+4. Response.clone
+- Stream 对象只能读取一次，所以下述操作会报错
+```JavaScript
+let text =  await response.text();
+let json =  await response.json();  // 报错
+```
+- 通过 response.clone() 复制后使其可以读取多次
+```JavaScript
+const response1 = await fetch('flowers.jpg');
+const response2 = response1.clone();
+
+const myBlob1 = await response1.blob();
+const myBlob2 = await response2.blob();
+
+image1.src = URL.createObjectURL(myBlob1);
+image2.src = URL.createObjectURL(myBlob2);
+```
+
+5. fetch 的第二个参数
+- 常见配置（其他见 link 对应的文档）
+  - 阮一峰：'method：HTTP 请求的方法，POST、DELETE、PUT 都在这个属性设置'
+  - 阮一峰：'headers：一个对象，用来定制 HTTP 请求的标头'
+  - 阮一峰：'body：POST 请求的数据体，GET 没有请求体则不需要设置'
+```JavaScript
+fetch(url, optionObj)
+
+// 提交 JSON 数据
+const user =  { name:  'John', surname:  'Smith'  };
+const response = await fetch('/article/fetch/post/user', {
+  method: 'POST',
+  headers: {
+   'Content-Type': 'application/json;charset=utf-8'
+  }, 
+  body: JSON.stringify(user) 
+});
+
+// 提交 formData
+const form = document.querySelector('form');
+const response = await fetch('/users', {
+  method: 'POST',
+  body: new FormData(form)
+})
+
+// 上传二进制数据
+let blob = await new Promise(resolve =>   
+  canvasElem.toBlob(resolve,  'image/png')
+);
+let response = await fetch('/article/fetch/post/image', {
+  method:  'POST',
+  body: blob
+});
+```
+
+6. 取消 fetch 请求
+- GPT：'如果多个 fetch 请求使用同一个 AbortController 实例，它们会同时被中止。要为每个请求创建单独的 AbortController 实例；fetch 请求完成后不能被取消'
+```JavaScript
+let controller = new AbortController();
+setTimeout(() => controller.abort(), 1000);
+
+try {
+  let response = await fetch('/long-operation', {
+    signal: controller.signal
+  });
+} catch(err) {
+  // 检测错误类型是否为 AbortError
+  if (err.name == 'AbortError') {
+    console.log('Aborted!');
+  } else {
+    throw err;
+  }
+}
+```
+
+7. axios、xhr 都可以配置 timeout，fetch 不可以，可以通过 Promise.race 设置一个 timeout 请求来实现
+```JavaScript
+function fetchWithTimeout(url, options, timeout = 5000) {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), timeout)
+    )
+  ]);
+}
+
+// 使用示例
+fetchWithTimeout('https://example.com/api', {}, 5000)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok ' + response.statusText);
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log('Response:', data);
+  })
+  .catch(error => {
+    if (error.message === 'Request timed out') {
+      console.error('The request timed out.');
+    } else {
+      console.error('Error:', error);
+    }
+  });
 ```
 
 ### Error
