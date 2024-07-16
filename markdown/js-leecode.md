@@ -431,12 +431,21 @@ function flat(arr, depth = 1) {
     } else {
       result.push(item)
     }
+
+    // or
+
+    result.push(
+      ...(Array.isArray(item) && depth > 0
+        ? flat(item, depth - 1)
+        : [item])
+    )
   })
   return result
 }
 
 function flat(arr, depth = 1) {
   return depth ? arr.reduce((pre, cur) => {
+    // reduce 循环中不需要判断 depth 的原因在于判断被提前到外层了
     return [...pre, ...(Array.isArray(cur) ? flat(cur, depth - 1) : [cur])]
   }, []) : arr;
 }

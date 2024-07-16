@@ -214,3 +214,37 @@ promise()
   .catch((err5) => {
     // console.log('err5', err5) // Error: res5 error
   })
+
+// 实现 flat
+let flatArr = [1, [2, [3, [4, [5]]]]]
+
+function selfFlatOne(flatArr, depth = 1) {
+  let result = []
+  flatArr.forEach((element) => {
+    result.push(
+      ...(Array.isArray(element) && depth > 0
+        ? selfFlatOne(element, depth - 1)
+        : [element])
+    )
+  })
+  return result
+}
+
+function selfFlatTwo(flatArr, depth = 1) {
+  return depth
+    ? flatArr.reduce((pre, cur) => {
+        return [
+          ...pre,
+          ...(Array.isArray(cur) ? selfFlatTwo(cur, depth - 1) : [cur]),
+        ]
+      }, [])
+    : flatArr
+}
+
+console.log(selfFlatOne(flatArr, 1)) // [1, 2, [3, [4, [5]]]]
+console.log(selfFlatOne(flatArr, 100)) // [1, 2, 3, 4, 5]
+console.log(selfFlatOne(flatArr, Infinity)) // [1, 2, 3, 4, 5]
+
+console.log(selfFlatTwo(flatArr, 1)) // [1, 2, [3, [4, [5]]]]
+console.log(selfFlatTwo(flatArr, 100)) // [1, 2, 3, 4, 5]
+console.log(selfFlatTwo(flatArr, Infinity)) // [1, 2, 3, 4, 5]

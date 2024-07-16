@@ -331,8 +331,8 @@ display: none; // 从 DOM tree 中移除
 ```
 
 4. 文本溢出处理
-```
-<!-- 单行 -->
+```CSS
+/* 单行 */
 .ellipsis {
   width: 200px; // 设置固定宽度，文本内容超过宽度才会出现省略效果
   overflow: hidden; // 隐藏溢出部分
@@ -340,7 +340,7 @@ display: none; // 从 DOM tree 中移除
   white-space: nowrap; // 不允许换行
 }
 
-<!-- 多行 -->
+/* 多行 */
 .ellipsis {
   display: -webkit-box;
   width: 100px;

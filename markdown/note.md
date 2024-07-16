@@ -10,12 +10,12 @@
 function throttle(fn) {
   let canRun = true // 通过闭包保存一个标记
   return function () {
-    if (!canRun) return // 在函数开头判断标记是否为true，不为true则return
-    canRun = false // 立即设置为false
+    if (!canRun) return // 在函数开头判断标记是否为 true，不为 true 则 return
+    canRun = false // 立即设置为 false
     setTimeout(() => {
-      // 将外部传入的函数的执行放在setTimeout中
+      // 将外部传入的函数的执行放在 setTimeout 中
       fn.apply(this, arguments)
-      // 最后在setTimeout执行完毕后再把标记设置为true(关键)表示可以执行下一次循环了。当定时器没有执行的时候标记永远是false，在开头被return掉
+      // 最后在 setTimeout 执行完毕后再把标记设置为 true （关键）表示可以执行下一次循环了。当定时器没有执行的时候标记永远是 false，在开头被 return 掉
       canRun = true
     }, 500)
   }
@@ -24,6 +24,20 @@ function sayHi(e) {
   console.log(e.target.innerWidth, e.target.innerHeight)
 }
 window.addEventListener('resize', throttle(sayHi))
+
+// 根据传入的 delay 来动态执行节流
+function throttle(fn, delay) {
+  let preTime = Date.now()
+  return function () {
+    let context = this
+    let args = arguments
+    // 判断时间戳间隔是否大于 delay
+    if (Date.now() - preTime >= delay) {
+      fn.apply(context, args)
+      preTime = Date.now()
+    }
+  }
+}
 ```
 
 3. 防抖：'在事件停止触发后一段时间才执行函数，适用于需要在操作停止后进行处理的场景'
@@ -45,6 +59,25 @@ function sayHi() {
 
 var inp = document.getElementById('inp')
 inp.addEventListener('input', debounce(sayHi)) // 防抖
+
+// 优化绑定 this、arguments
+function debounce(fn, wait) {
+  let timeoutId
+  return function () {
+    // 确保 setTimeout 绑定的 this、arguments 正确
+    let context = this
+    let args = arguments
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    timeoutId = setTimeout(() => {
+      // 01
+      fn.apply(context, args)
+      // 02
+      fn(...args)
+    }, wait)
+  }
+}
 ```
 
 4. 两者都是通过闭包创建一个局部变量，通过该局部变量来判断事件是否执行；防抖在于短时间内的重复操作只有最后一次操作会起作用；节流在于节省性能开销（固定时间间隔下执行一次）
@@ -210,9 +243,9 @@ sleep(output, 1000)
 ### devDependencies 和 dependencies
 1. devDependencies 应用于开发环境和构建过程，不会应用于生产环境
 - 好处在于可以区分开发、生产环境依赖；优化生产环境，减少部署的包大小，从而优化性能和资源使用；提高可维护性，更好的管理和维护项目的依赖关系
-- 如 ESLint 用于在开发环境中检查代码规范、Jest 用于在开发环境中进行单元测试
+- 如 ESLint 用于在开发环境中检查代码规范、Jest 用于在开发环境中进行单元测试（对于 ESLint、Jest 而言在生产环境中没有作用所以可以放置在 devDependencies 中）
 
-2. dependencies 应用于生产环境
+2. dependencies 应用于生产环境（比如 vue、axios、element 这种测试和生产环境都需要用到的库应该安装在 dependencies 中）
 
 ### 事件简介
 1. onXXX
@@ -731,23 +764,23 @@ uni.chooseLocation({
 ```JavaScript
 var text = '被复制的内容，啦啦啦~';
 if (navigator.clipboard) {
-    // clipboard api 复制
-    navigator.clipboard.writeText(text);
+  // clipboard api 复制
+  navigator.clipboard.writeText(text);
 } else {
-    var textarea = document.createElement('textarea');
-    document.body.appendChild(textarea);
-    // 隐藏此输入框
-    textarea.style.position = 'fixed';
-    textarea.style.clip = 'rect(0 0 0 0)';
-    textarea.style.top = '10px';
-    // 赋值
-    textarea.value = text;
-    // 选中
-    textarea.select();
-    // 复制
-    document.execCommand('copy', true);
-    // 移除输入框
-    document.body.removeChild(textarea);
+  var textarea = document.createElement('textarea');
+  document.body.appendChild(textarea);
+  // 隐藏此输入框
+  textarea.style.position = 'fixed';
+  textarea.style.clip = 'rect(0 0 0 0)';
+  textarea.style.top = '10px';
+  // 赋值
+  textarea.value = text;
+  // 选中
+  textarea.select();
+  // 复制
+  document.execCommand('copy', true);
+  // 移除输入框
+  document.body.removeChild(textarea);
 }
 
 const copyText = async val => {
@@ -1272,6 +1305,82 @@ for (const [key, value] of arr.entries()) {
 }
 ```
 
+8. 常见的类数组对象
+- 函数的 arguments
+- 通过 document.querySelector 获取的 nodeList（const nodeList = document.querySelectorAll('div')）
+- const arrarLike = { 0: 'a', 1: 'b', 2: 'c', length: 3 }
+
+9. 获取 url 上的 query string
+```JavaScript
+const src = 'https://www.baidu.com/?id=123&name=aaa&phone=12345'
+
+function getParams(src) {
+  if (!src.includes('?')) {
+    return {}
+  }
+  const [_, queryStr] = src.split('?')
+  const result = {}
+  queryStr.split('&').forEach((item) => {
+    if (item.includes('=')) {
+      const [key, value] = item.split('=')
+      result[key] = value
+    }
+  })
+  return result
+}
+console.log(getParams(src)) // { id: '123', name: 'aaa', phone: '12345' }
+```
+
+10. Object.assign 和解构赋值
+```JavaScript
+// 01 - 原型上属性的处理两者都只会复制自身上的属性
+const proto = { inherited: 'inherited property' };
+const obj = Object.create(proto);
+obj.own = 'own property';
+const newObj1 = Object.assign({}, obj);
+console.log(newObj1); // { own: 'own property' }
+const { ...newObj2 } = obj;
+console.log(newObj2); // { own: 'own property' }
+
+// 02 - 嵌套对象的处理两者都是浅拷贝
+const obj = { a: { nested: 'nested property' } };
+const newObj1 = Object.assign({}, obj);
+const newObj2 = { ...obj };
+obj.a.nested = 'changed property';
+console.log(newObj1.a.nested); // 'changed property'
+console.log(newObj2.a.nested); // 'changed property'
+
+// 03 - 处理非普通对象
+const textArea = document.createElement('textarea');
+
+// 使用 Object.assign
+Object.assign(textArea.style, {
+  position: 'fixed',
+  left: '-999px',
+  top: '10px'
+});
+console.log(textArea.style.position); // 'fixed'
+
+// 04 - 使用解构赋值（错误示范）
+try {
+  textArea.style = { ...textArea.style, position: 'fixed' };
+} catch (error) {
+  console.error(error); // TypeError: Cannot assign to read only property 'style' of object '#<HTMLTextAreaElement>'
+}
+
+// 05 - 属性的覆盖顺序都是后面覆盖前面的
+const obj1 = { a: 1, b: 2 };
+const obj2 = { b: 3, c: 4 };
+
+// 使用 Object.assign
+const newObj1 = Object.assign({}, obj1, obj2);
+console.log(newObj1); // { a: 1, b: 3, c: 4 }
+
+// 使用解构赋值
+const newObj2 = { ...obj1, ...obj2 };
+console.log(newObj2); // { a: 1, b: 3, c: 4 }
+```
+
 ### axios 比较 fetch
 1. link：https://blog.logrocket.com/axios-vs-fetch-best-http-requests/
 
@@ -1378,6 +1487,44 @@ promise
 // 作用在于可对 request 做统一的配置处理，对 response 做统一的拦截处理（超时重试、失败重试等情况）
 axios.interceptors.request.use()
 axios.interceptors.response.use()
+
+// 请求 interceptors
+axios.interceptors.request.use(
+  (config) => {
+    // Do or set some things before the request is set
+
+    // e.g. Authorization header
+    config.headers["Authorization"] = `Bearer ${token}`
+
+    // e.g. Content-type
+    config.headers["Content-Type"] = "application/json"
+
+    // e.g. set Base url
+    config.baseURL = "https://base-url"
+
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  })
+
+// 响应 interceptors
+axios.interceptors.response.use(
+  (response) => {
+    // do something i.e. return data object
+    return response.data
+  },
+  (error) => {
+    if (error?.response?.status === 403) {
+      // Handle forbidden error e.g. show restricted access warning
+    }
+
+    if (error?.response?.status === 401) {
+      // Handle unauthorized error e.g. refresh and set token in storage
+    }
+
+    throw error // forward other client errors
+  })
 ```
 
 6. 下载进度
@@ -1446,4 +1593,31 @@ try {
     // Error on the request (Network error)
   }
 }
+```
+
+9. axios 入门
+- link：https://blog.csdn.net/luo1831251387/article/details/115641688
+- method：get、post、delete 等
+
+- baseURL 的设置
+```JavaScript
+// 根据环境切换在不同的 baseURL
+if (process.env.NODE_ENV == 'development') {
+  axios.defaults.baseURL = 'https://www.development.com'
+} else if (process.env.NODE_ENV == 'debug') {
+  axios.defaults.baseURL = 'https://www.debug.com'
+} else if (process.env.NODE_ENV == 'production') {
+  axios.defaults.baseURL = 'https://www.production.com'
+}
+```
+
+- 全局请求超时设置
+```JavaScript
+axios.defaults.timeout = 10000
+```
+
+- post 请求头设置
+```JavaScript
+axios.defaults.headers.post['Content-Type'] =
+  'application/x-www-form-urlencoded;charset=UTF-8'
 ```
