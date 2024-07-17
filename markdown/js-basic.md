@@ -43,7 +43,8 @@ document.getElementById('outer').addEventListener('click', function(event) {
 
 
 ### bind()、call()
-```
+1. leetcode 对 bind、call 的解释
+```JavaScript
 // link：https://leetcode.cn/problems/array-prototype-last/solutions/2506895/shu-zu-yuan-xing-dui-xiang-de-zui-hou-yi-4phe/#:~:text=JavaScript%20%E6%8F%90%E4%BE%9B%E4%BA%86,%E5%BC%95%E7%94%A8%E7%9A%84%E5%AF%B9%E8%B1%A1%E3%80%82
 function greet() {
   return `你好，我是 ${this.name}`;
@@ -62,6 +63,57 @@ console.log(greetPerson1.call(person2)); // 你好，我是 Alice
 
 // 相比之下，正常函数调用允许使用 `call` 方法设置 `this` 上下文
 console.log(greet.call(person2)); // 你好，我是 Bob
+```
+
+2. '使用 bind 多次绑定一个函数，后续的绑定能生效吗?'
+- 不能，被绑定后，后续再次使用 bind 绑定没有作用。最后执行函数 fn 时，this 始终是被指向第一次 bind 时的 thisArg
+```JavaScript
+const obj1 = {
+  name: 'obj1',
+  log() {
+    console.log(this.name)
+  },
+}
+const obj2 = {
+  name: 'obj2',
+}
+const obj3 = {
+  name: 'obj3',
+}
+let bindLog1 = obj1.log.bind(obj2)
+let bindLog2 = bindLog1.bind(obj3) // 将 bindLog1 绑定到 obj3 后赋值给新变量 bingLog2
+let bindLog3 = obj1.log.bind(obj2).bind(obj3) // 上面相等于同时 bind 了两次不同的对象；或者后续调用 apply、call 都不会改变 this 的指向
+obj1.log() // obj1
+bindLog1() // obj2
+bindLog2() // obj2（对 bindLog1 再重新 bind 新的对象不会改变其 this
+bindLog3() // obj2
+
+let bindLog4 = obj1.log.bind(obj2)
+bindLog4() // obj2
+bindLog4 = obj1.log.bind(obj3) // 这里是改变了 bindLog4 的值
+bindLog4() // obj3
+```
+
+3. bind 后修改及 call 等
+```JavaScript
+function test() {
+  console.log(this)
+}
+// test() // window or global
+
+let boundTest = test.bind({ name: 'ly' })
+boundTest() // => { name: 'ly' }
+
+boundTest.call({ name: 'bob' }) // => { name: 'ly' }
+
+// 对已有的进行绑定
+// boundTest = boundTest.bind({ name: 'ly' }).bind({ name: 'dongdong' })
+boundTest = boundTest.bind({ name: 'dongdong' })
+boundTest() // => { name: 'ly' }
+
+// 重新绑定
+boundTest = test.bind({ name: 'john' })
+boundTest() // => { name: 'john' }
 ```
 
 
