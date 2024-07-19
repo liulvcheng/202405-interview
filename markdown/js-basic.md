@@ -761,9 +761,9 @@ console.log(arr.push(3)) // 3 - arr.length
 - link：https://www.zhangxinxu.com/wordpress/2018/04/known-es6-symbol-function/
 - Symbol 具有唯一性；Symbol 类型是不可枚举的；Symbol 访问需要用到 `Object.getOwnPropertySymbols()` 方法（即普通的遍历方法拿不到 Object 中的 Symbol 属性，具有隐藏性 ）
 ```JavaScript
-typeof Symbol() === "symbol"
-typeof Symbol("foo") === "symbol"
-typeof Symbol.iterator === "symbol"
+typeof Symbol() === "symbol" // true
+typeof Symbol("foo") === "symbol" // true
+typeof Symbol.iterator === "symbol" // true
 
 // symbol 对比
 let symbolOne = Symbol('yo')

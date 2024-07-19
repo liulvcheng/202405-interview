@@ -1621,3 +1621,19 @@ axios.defaults.timeout = 10000
 axios.defaults.headers.post['Content-Type'] =
   'application/x-www-form-urlencoded;charset=UTF-8'
 ```
+
+### 为没有键（key）的数据添加唯一 key
+1. 直接添加
+```JavaScript
+const items = ref([{ value: '111' }, { value: '222' }, { value: '333' }])
+onMounted(() => {
+  items.value = items.value.map((item) => ({ ...item, key: Symbol() }))
+})
+```
+
+2. utils 函数
+```JavaScript
+export const addKey = (list) => {
+  return list.map((item) => ({ ...item, key: Symbol() }))
+}
+```

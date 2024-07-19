@@ -1982,3 +1982,33 @@ console.log(myObj); // { a: 1, b: { c: { d: 2, e: { f: 3 } } } }
 
 9. tsc 指定编译版本
 - tsc --target es2015 hello.ts
+
+10. as const 类型收窄
+- 也可以看作具体的字面量联合类型和 string 类型存在不兼容的地方
+```TypeScript
+// 01
+type Route = '/' | 'admin' | 'about'
+
+const routes: { [key: string]: Route } = {
+  home: '/',
+  admin: 'admin',
+  about: 'about',
+}
+
+const getRoute = (val: Route) => {}
+// or
+const getRoute = (val: '/' | 'admin' | 'about') => {}
+
+getRoute(routes.admin) // 不报错
+
+// 02
+const routes = {
+  home: '/',
+  admin: 'admin',
+  about: 'about',
+} as const
+
+const getRoute = (val: '/' | 'admin' | 'about') => {}
+
+getRoute(routes.admin) // 不报错
+```
