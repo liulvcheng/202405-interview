@@ -48,7 +48,34 @@ const classObj = computed(() => ({
 </li>
 ```
 
-2. v-if、v-for 作用于统一节点时，v-if 优先级更高
+2. vue3 中 v-if、v-for 作用于同一节点时，v-if 优先级更高；vue2 中 v-for 的优先级更高
+```JavaScript
+// vue3
+// 这会抛出一个错误，因为属性 todo 此时没有在该实例上定义
+<li v-for="todo in todos" v-if="!todo.isComplete">
+  {{ todo.name }}
+</li>
+
+// vue2 中分为判断条件在 for 循环之外和之内
+// 之外
+<div v-if="isShow">
+  <li v-for="todo in todos">
+    {{ todo.name }}
+  </li>
+</div>
+// 之内判断每一项（在 vue2 中之内判断每一项的性能要差于 for、if 作用于同一层级「作用于同一层级时会先 for 一项然后 if 判断该项；包一层的效果会将所有的项全部 for 出来再对每一项 if 判断」
+<li v-for="todo in todos">
+  <div v-if="item.isShow">
+    {{ todo.name }}
+  </div>
+</li>
+// 先过滤数据
+<li v-for="todo in filterTodos">
+  {{ todo.name }}
+</li>
+
+// 由上讨论 v-for、v-if 需要同时作用的情况最好通过计算属性将原始数据过滤后再渲染
+```
 
 3. toReversed and toSorted
 [3, 2, 1].toSorted()
