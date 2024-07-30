@@ -308,6 +308,38 @@ text-shadow:
 ### margin 重叠问题
 - '两个相邻的外边距都是正数时，折叠结果是它们两者之间较大的值；两个相邻的外边距都是负数时，折叠结果是两者绝对值的较大值；两个外边距一正一负时，折叠结果是两者的相加的和。'
 
+### document.body.clientWidth and document.documentElement.clientWidth
+1. body 对应 body 的宽度，documentElement 对应 html 的宽度
+
+2. 什么情况下两者会不同
+- GPT：'CSS 样式影响：如果页面中 <body> 元素有特定的 CSS 样式（例如边距、填充等），document.body.clientWidth 可能会与 document.documentElement.clientWidth 不同（例如，如果 <body> 有 margin 或 padding，这些会影响 document.body.clientWidth）'
+- GPT：'嵌套框架和布局：在嵌套框架（iframe）中，document.body.clientWidth 和 document.documentElement.clientWidth 可能会有所不同，因为嵌套框架的布局和样式可能与主文档不同'
+```JavaScript
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        width: 90%;
+        margin: 20px;
+        padding: 20px;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      console.log('document.body.clientWidth:', document.body.clientWidth)
+      console.log(
+        'document.documentElement.clientWidth:',
+        document.documentElement.clientWidth
+      )
+    </script>
+  </body>
+</html>
+```
+
+
 ### others
 1. 元素消失
 ```
